@@ -12,11 +12,6 @@ def data_extraction()-> dict[str, pd.DataFrame]:
     """
     
     sales_train_data = pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/sales_train.csv')
-    #renaming the date column in the sales_train_data dataframe to sales_date to 
-    # match the schema in the database and because date is a reserved word
-
-    sales_train_data.rename(columns={"date": "sales_date", "date_block_num": "sales_date_block_num"}, inplace=True)
-
     items_data = pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/items.csv')
     shops_data = pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/shops.csv')
     test_data = pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/test.csv')
@@ -29,17 +24,26 @@ def data_extraction()-> dict[str, pd.DataFrame]:
         "item_categories": items_categories_data
     }
 
-def data_transformation(orig_sales_train_df: pd.DataFrame)-> dict[str, pd.DataFrame]:
+def data_transformation(data_dict: dict[str, pd.DataFrame])-> dict[str, pd.DataFrame]:
     """
     This function returns a dictionary of copied dataframes of the sales_train dataframe
     with different transformations done to them.
     """
-    sales_train_df = orig_sales_train_df.copy(deep=False)
+    sales_train_df = data_dict["orig_sales_train"].copy(deep=False)
     sales_train_df.drop_duplicates(inplace=True)
     # removing duplicate rows (no duplicate rows in other tables)
-    
-    #changing sales_train date from string to datetime
-    sales_train_df["sales_date"] = pd.to_datetime(sales_train_df["sales_date"], format="%d.%m.%Y")
+    sales_train_df.rename(columns={"date_block_num": "month_block_num"}, inplace=True)
+    # dropping date column as it is no longer needed
+    sales_train_df.drop(columns=["date"], inplace=True)
+    # subsetting items dataframe to only include item_id and item_category_id columns 
+    # to reduce memory usage
+    item_categories = data_dict["items"].loc[:, ["item_id", "item_category_id"]]
+    sales_train_df = sales_train_df.merge(item_categories, on="item_id", how="inner")
+
+    #turns id columns and month_block_num to string for easier one-hot encoding
+    for col in ["item_id", "shop_id", "item_category_id", "month_block_num"]:
+        sales_train_df[col] = sales_train_df[col].map(str)    
+
     # replacing the item_price with the absolute value
     sales_train_df["item_price"] = sales_train_df["item_price"].map(lambda x: abs(x))
     
@@ -87,7 +91,7 @@ if __name__ == "__main__":
     #importing the .env variables
     load_dotenv()
     original_data = data_extraction()
-    transformed_data = data_transformation(original_data['orig_sales_train'])
+    transformed_data = data_transformation(original_data)
     data_loading_transformed_dfs(transformed_data)
     
     
