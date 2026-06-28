@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 from dotenv import load_dotenv
-import psycopg
+
 
 
 def data_extraction()-> dict[str, pd.DataFrame]:
@@ -12,6 +12,11 @@ def data_extraction()-> dict[str, pd.DataFrame]:
     """
     
     sales_train_data = pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/sales_train.csv')
+    #renaming the date column in the sales_train_data dataframe to sales_date to 
+    # match the schema in the database and because date is a reserved word
+
+    sales_train_data.rename(columns={"date": "sales_date", "date_block_num": "sales_date_block_num"}, inplace=True)
+
     items_data = pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/items.csv')
     shops_data = pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/shops.csv')
     test_data = pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/test.csv')
@@ -34,7 +39,7 @@ def data_transformation(orig_sales_train_df: pd.DataFrame)-> dict[str, pd.DataFr
     # removing duplicate rows (no duplicate rows in other tables)
     
     #changing sales_train date from string to datetime
-    sales_train_df["date"] = sales_train_df["date"].to_datetime( format="%d.%m.%Y")
+    sales_train_df["sales_date"] = pd.to_datetime(sales_train_df["sales_date"], format="%d.%m.%Y")
     # replacing the item_price with the absolute value
     sales_train_df["item_price"] = sales_train_df["item_price"].map(lambda x: abs(x))
     
@@ -71,24 +76,20 @@ def data_transformation(orig_sales_train_df: pd.DataFrame)-> dict[str, pd.DataFr
     }
 
 
-def data_loading_original_dfs(dataframes: dict[str, pd.DataFrame], db_connection_params: dict[str, str] = None):
-    """This function loads the original dataframes to the database"""
-    conn = psycopg.connect(**db_connection_params)
-    cursor = conn.cursor()
-    for key, value in dataframes.items():
-        value.to_sql(key, conn, if_exists='replace', index=False)
-    cursor.close()
-    conn.close()
+        
 
 def data_loading_transformed_dfs(dataframes: dict[str, pd.DataFrame]):
     """This function loads the transformed training tables to the csv files"""
     for key, value in dataframes.items():
-        value.to_csv(os.getenv('TRANSFORMED_DATA_PATH') + '/' + key + '.csv', index=False)
+        value.to_csv(os.getenv('CLEAN_DATA_PATH') + '/' + key + '.csv', index=False)
 
 if __name__ == "__main__":
-    original_data = data_extraction()
     #importing the .env variables
     load_dotenv()
-    data_loading_original_dfs(original_data, os.getenv('DB_CONFIG'))
-    transformed_data = data_transformation(original_data['orig_sales_train_df'])
+    original_data = data_extraction()
+    transformed_data = data_transformation(original_data['orig_sales_train'])
     data_loading_transformed_dfs(transformed_data)
+    
+    
+    
+    
