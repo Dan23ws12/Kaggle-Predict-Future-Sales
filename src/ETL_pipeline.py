@@ -70,19 +70,33 @@ def data_transformation(data_dict: dict[str, pd.DataFrame])-> dict[str, pd.DataF
     sales_train_cnt_ffill["item_cnt_day"] = sales_train_cnt_ffill["item_cnt_day"].mask(sales_train_cnt_ffill["item_cnt_day"] < 0)
     sales_train_cnt_ffill["item_cnt_day"] = sales_train_cnt_ffill["item_cnt_day"].ffill()
     
-    
+    # calling the get_item_cnt_month function on each dataframe for the analysis
     return {
-        "sales_train_cnt_0": sales_train_cnt_0,
-        "sales_train_cnt_abs": sales_train_cnt_abs,
-        "sales_train_cnt_mean": sales_train_cnt_mean,
-        "sales_train_cnt_bfill": sales_train_cnt_bfill,
-        "sales_train_cnt_ffill": sales_train_cnt_ffill
+        "sales_train_cnt_0": get_item_cnt_month(sales_train_cnt_0),
+        "sales_train_cnt_abs": get_item_cnt_month(sales_train_cnt_abs),
+        "sales_train_cnt_mean": get_item_cnt_month(sales_train_cnt_mean),
+        "sales_train_cnt_bfill": get_item_cnt_month(sales_train_cnt_bfill),
+        "sales_train_cnt_ffill": get_item_cnt_month(sales_train_cnt_ffill)
     }
 
 
-        
+def get_item_cnt_month(df: pd.DataFrame)-> dict[str, pd.DataFrame]:
+    """
+    This function calculates total sales per month for each item and store
+    and returns a copy of the original dataframe with the total named item_cnt_month
+    """
+    # gets the total number of items sold per month and per store
+    item_cnt_month = df.groupby(["item_id", "shop_id", "month_block_num"])["item_cnt_day"].sum().reset_index()
+    #renames the sum to item_cnt_month
+    item_cnt_month.rename(columns={"item_cnt_day": "item_cnt_month"}, inplace=True)
+    # removes original column
+    df.drop(columns = ["item_cnt_day"], inplace=True)
+    # merges with original database 
+    df = df.merge(item_cnt_month, on=["item_id", "shop_id", "month_block_num"], how="left")
+    return df
 
-def data_loading_transformed_dfs(dataframes: dict[str, pd.DataFrame]):
+
+def loading_transformed_dfs_to_csv(dataframes: dict[str, pd.DataFrame]):
     """This function loads the transformed training tables to the csv files"""
     for key, value in dataframes.items():
         value.to_csv(os.getenv('CLEAN_DATA_PATH') + '/' + key + '.csv', index=False)
@@ -92,7 +106,7 @@ if __name__ == "__main__":
     load_dotenv()
     original_data = data_extraction()
     transformed_data = data_transformation(original_data)
-    data_loading_transformed_dfs(transformed_data)
+    loading_transformed_dfs_to_csv(transformed_data)
     
     
     
