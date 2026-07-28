@@ -89,7 +89,7 @@ def get_charts_for_cat_vars(df:pd.DataFrame, colname:str):
         startangle=140,
         colors=plt.cm.Set3.colors[:len(top_shops)]
     )
-    axes[0].set_title(f'Top 10 {colname} by Number of Sales (Pie Chart)', fontsize=14)
+    axes[0].set_title(f'Top 10 {label_name_dict[colname]} by Number of Sales (Pie Chart)', fontsize=14)
 
     # 2. Bar Chart - Top 10 Item Categories Count
     top_cats = df[[colname,"item_cnt_month"]].groupby(colname).sum().sort_values("item_cnt_month",ascending=False).head(10).reset_index()
@@ -99,7 +99,7 @@ def get_charts_for_cat_vars(df:pd.DataFrame, colname:str):
         color='cornflowerblue',
         edgecolor='navy'
     )
-    axes[1].set_title(f'Top 10 {colname} by Number of Items Sold (Bar Chart)', fontsize=14)
+    axes[1].set_title(f'Top 10 {label_name_dict[colname]} by Number of Items Sold (Bar Chart)', fontsize=14)
     axes[1].set_xlabel(f'{label_name_dict[colname]} ID', fontsize=12)
     axes[1].set_ylabel('Number of Items Sold', fontsize=12)
     axes[1].tick_params(axis='x', rotation=45)
