@@ -12,7 +12,16 @@ load_dotenv()
 cat_cols = ["shop_id", "item_id", "item_category_id", "month_block_num"]
 numeric_cols = ["item_price", "item_cnt_month"]
 target_col = "item_cnt_month"
-sales = pd.read_csv(os.getenv("CLEAN_DATA_PATH") + "/sales_train_cnt_0.csv")
+
+def modify_categorical_columns(df:pd.DataFrame) -> pd.DataFrame:
+    """
+    Modifies the categorical columns in a given dataframe by concatenating
+    the item category with the item id
+    """
+    new_df = df[numeric_cols]
+    for col in cat_cols:
+        new_df[col] = df[col].astype(str)
+    return new_df
 
 def cramer_v(col1: pd.Series, col2:pd.Series) -> float:
     """
