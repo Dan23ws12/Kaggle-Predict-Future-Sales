@@ -4,81 +4,84 @@ from dotenv import load_dotenv
 
 
 
-def data_extraction()-> dict[str, pd.DataFrame]:
+def data_extraction(table_name: str)-> pd.DataFrame:
     """ 
-    This function returns a dictionary containing the dataframes
-    that represent the original (imported from Kaggle) tables used to train the
+    This function returns a dataframe of the table_name that represent the original (imported from Kaggle) tables used to train the
     prediction models
     """
     
-    sales_train_data = pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/sales_train.csv')
-    items_data = pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/items.csv')
-    shops_data = pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/shops.csv')
-    test_data = pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/test.csv')
-    items_categories_data = pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/item_categories.csv')
-    return {
-        "orig_sales_train": sales_train_data,
-        "items": items_data,
-        "shops": shops_data,
-        "test": test_data,
-        "item_categories": items_categories_data
-    }
+    if table_name == "sales_train":
+        return pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/sales_train.csv')
+    elif table_name == "items":
+        return pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/items.csv')
+    elif table_name == "shops":
+        return pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/shops.csv')
+    elif table_name == "test":
+        return pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/test.csv')
+    elif table_name == "item_categories":
+        return pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/item_categories.csv')
+    else:
+        raise ValueError(f"Table {table_name} not found")
 
-def data_transformation(data_dict: dict[str, pd.DataFrame])-> dict[str, pd.DataFrame]:
+def get_full_sales_data(sales: pd.DataFrame, items: pd.DataFrame) -> pd.DataFrame:
     """
-    This function returns a dictionary of copied dataframes of the sales_train dataframe
-    with different transformations done to them.
+    Returns a copy of the sales_train dataframe with the date column, item_category_id and item_id columns
+    turned into a datetime object and the monthly aggregated training table added as
+    the item_cnt_month column
     """
-    sales_train_df = data_dict["orig_sales_train"].copy(deep=False)
-    sales_train_df.drop_duplicates(inplace=True)
+    # converting the sales dataframe
+    sales_df = sales.copy(deep=False)
+    sales_df["date"] = pd.to_datetime(sales_df["date"], format="%d.%m.%Y")
+
+    # merging the training data with items dataframe
+    sales_df = pd.merge(sales_df, items, on="item_id", how="inner")
+    return sales_df
+    
+
+def get_sales_train_data(sales:pd.DataFrame, fill_method="zero"):
+    """
+    Returns a copy of the sales dataframe for training with negative values in 
+    item_cnt_day replaced by the desired fill_method
+    and item_cnt_day is then replaced with item_cnt_month
+    """
+    sales_train_df = sales.copy(deep=False)
+    if fill_method == "zero":
+        sales_train_df["item_cnt_day"] = sales_train_df["item_cnt_day"].map(lambda x: x if x>=0 else 0)
+    elif fill_method == "abs":
+        sales_train_df["item_cnt_day"] = sales_train_df["item_cnt_day"].abs()
+    elif fill_method == "mean":
+        mean_val = sales_train_df["item_cnt_day"].mean()
+        sales_train_df["item_cnt_day"] = sales_train_df["item_cnt_day"].map(lambda x: x if x >= 0 else mean_val)
+    elif fill_method == "bfill":
+        sales_train_df["item_cnt_day"] = sales_train_df["item_cnt_day"].mask(sales_train_df["item_cnt_day"] < 0)
+        sales_train_df["item_cnt_day"]= sales_train_df["item_cnt_day"].bfill()
+    elif fill_method == "ffill":
+        sales_train_df["item_cnt_day"] = sales_train_df["item_cnt_day"].mask(sales_train_df["item_cnt_day"] < 0)
+        sales_train_df["item_cnt_day"]= sales_train_df["item_cnt_day"].ffill()
+    else:
+        raise ValueError(f"fill_method {fill_method} not found")
+    return get_item_cnt_month(sales_train_df)
+
+    
+
+def get_train_data_template(sales: pd.DataFrame) -> pd.DataFrame:
+    """
+    Returns a copy of the sales dataframe with the date column removed, 
+    date_block_num renamed to month_block_num and item_price 
+    turned into its absolute value (only one value is negative)
+    This function returns a remplate so that other functions can 
+    fill in item_cnt_day with the desired values
+    """
+    sales_train_df = sales.copy(deep=False)
     # removing duplicate rows (no duplicate rows in other tables)
+    sales_train_df.drop_duplicates(inplace=True)
     sales_train_df.rename(columns={"date_block_num": "month_block_num"}, inplace=True)
     # dropping date column as it is no longer needed
     sales_train_df.drop(columns=["date"], inplace=True)
-    # subsetting items dataframe to only include item_id and item_category_id columns 
-    # to reduce memory usage
-    item_categories = data_dict["items"].loc[:, ["item_id", "item_category_id"]]
-    sales_train_df = sales_train_df.merge(item_categories, on="item_id", how="inner")
-
-    #turns id columns and month_block_num to string for easier one-hot encoding
-    for col in ["item_id", "shop_id", "item_category_id", "month_block_num"]:
-        sales_train_df[col] = sales_train_df[col].map(str)    
-
     # replacing the item_price with the absolute value
     sales_train_df["item_price"] = sales_train_df["item_price"].map(lambda x: abs(x))
+    return sales_train_df
     
-    # making data frames for different choices on how to change item_cnt_day
-    #replace negative values with 0
-    sales_train_cnt_0 = sales_train_df.copy(deep=False)
-    sales_train_cnt_0["item_cnt_day"] = sales_train_cnt_0["item_cnt_day"].map(lambda x: 0 if x < 0 else x)
-
-    # replace negative values with the absolute value
-    sales_train_cnt_abs = sales_train_df.copy(deep=False)
-    sales_train_cnt_abs["item_cnt_day"] = sales_train_cnt_abs["item_cnt_day"].map(lambda x: abs(x))
-
-    # replace negative values with mean
-    sales_train_cnt_mean = sales_train_df.copy(deep=False)
-    sales_train_cnt_mean["item_cnt_day"] = sales_train_cnt_mean["item_cnt_day"].map(lambda x: x if x >= 0 else sales_train_cnt_mean["item_cnt_day"].mean())
-
-    # use backfill to replace negative values
-    sales_train_cnt_bfill = sales_train_df.copy(deep=False)
-    sales_train_cnt_bfill["item_cnt_day"] = sales_train_cnt_bfill["item_cnt_day"].mask(sales_train_cnt_bfill["item_cnt_day"] < 0)
-    sales_train_cnt_bfill["item_cnt_day"] = sales_train_cnt_bfill["item_cnt_day"].bfill()
-    
-    # use forward fill to replace negative values
-    sales_train_cnt_ffill = sales_train_df.copy(deep=False)
-    sales_train_cnt_ffill["item_cnt_day"] = sales_train_cnt_ffill["item_cnt_day"].mask(sales_train_cnt_ffill["item_cnt_day"] < 0)
-    sales_train_cnt_ffill["item_cnt_day"] = sales_train_cnt_ffill["item_cnt_day"].ffill()
-    
-    # calling the get_item_cnt_month function on each dataframe for the analysis
-    return {
-        "sales_train_cnt_0": get_item_cnt_month(sales_train_cnt_0),
-        "sales_train_cnt_abs": get_item_cnt_month(sales_train_cnt_abs),
-        "sales_train_cnt_mean": get_item_cnt_month(sales_train_cnt_mean),
-        "sales_train_cnt_bfill": get_item_cnt_month(sales_train_cnt_bfill),
-        "sales_train_cnt_ffill": get_item_cnt_month(sales_train_cnt_ffill)
-    }
-
 
 def get_item_cnt_month(df: pd.DataFrame)-> dict[str, pd.DataFrame]:
     """
@@ -96,18 +99,36 @@ def get_item_cnt_month(df: pd.DataFrame)-> dict[str, pd.DataFrame]:
     return df
 
 
-def loading_transformed_dfs_to_csv(dataframes: dict[str, pd.DataFrame]):
-    """This function loads the transformed training tables to the csv files"""
-    for key, value in dataframes.items():
-        value.to_csv(os.getenv('CLEAN_DATA_PATH') + '/' + key + '.csv', index=False)
+def load_full_data_to_csv(sales: pd.DataFrame, table_name:str):
+    """This function loads the full dataset to the csv files"""
+    sales.to_csv(os.getenv('FULL_DATA_PATH') + '/' + table_name + '.csv', index=False)
+
+def load_train_data_to_csv(train_data: pd.DataFrame, table_name:str):
+    """This function loads the training dataset to the csv files"""
+    train_data.to_csv(os.getenv('CLEAN_DATA_PATH') + '/' + table_name + '.csv', index=False)
+
 
 if __name__ == "__main__":
     #importing the .env variables
     load_dotenv()
-    original_data = data_extraction()
-    transformed_data = data_transformation(original_data)
-    loading_transformed_dfs_to_csv(transformed_data)
-    
+    # imports original sales data
+    orig_sales_data = data_extraction("sales_train")
+    items_data = data_extraction("items")[["item_id", "item_category_id"]]   
+    #loads data for exploration and validation into csv
+    load_full_data_to_csv(get_full_sales_data(orig_sales_data, items_data), "sales_full_0")
+    # creates template for training data
+    sales_df_template = get_train_data_template(orig_sales_data)
+    # names of dataframes to be created
+    df_table_names = {
+        "zero": "sales_train_cnt_0",
+        "abs": "sales_train_cnt_abs",
+        "mean": "sales_train_cnt_mean",
+        "bfill": "sales_train_cnt_bfill",
+        "ffill": "sales_train_cnt_ffill"
+    }
+    #loops through the names of the dataframes and loads the training data to csv
+    for key, value in df_table_names.items():
+        load_train_data_to_csv(get_sales_train_data(sales_df_template, fill_method=key), value)
     
     
     
