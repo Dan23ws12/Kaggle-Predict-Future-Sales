@@ -25,16 +25,17 @@ def data_extraction(table_name: str)-> pd.DataFrame:
 
 def get_full_sales_data(sales: pd.DataFrame, items: pd.DataFrame) -> pd.DataFrame:
     """
-    Returns a copy of the sales_train dataframe with the date column, item_category_id and item_id columns
-    turned into a datetime object and the monthly aggregated training table added as
-    the item_cnt_month column
+    Returns a copy of the sales_train dataframe (with negative values in 
+    item_cnt_day replaced by 0) with the date column removed, 
+    item_category_id remains and added aggregated item_cnt_day by
+    month, shop and item as item_cnt_month column
     """
-    # converting the sales dataframe
-    sales_df = sales.copy(deep=False)
-    sales_df["date"] = pd.to_datetime(sales_df["date"], format="%d.%m.%Y")
-
-    # merging the training data with items dataframe
-    sales_df = pd.merge(sales_df, items, on="item_id", how="inner")
+    # sales argument already has negative values and date removed
+    # and item_cnt_month calculated
+    # merging the training data with items dataframe to add item_category_id
+    sales_df = pd.merge(sales, items, on="item_id", how="inner")
+    # returning the aggregated item_cnt_day by month, 
+    # shop and item as item_cnt_month column
     return sales_df
     
 
@@ -114,8 +115,6 @@ if __name__ == "__main__":
     # imports original sales data
     orig_sales_data = data_extraction("sales_train")
     items_data = data_extraction("items")[["item_id", "item_category_id"]]   
-    #loads data for exploration and validation into csv
-    load_full_data_to_csv(get_full_sales_data(orig_sales_data, items_data), "sales_full_0")
     # creates template for training data
     sales_df_template = get_train_data_template(orig_sales_data)
     # names of dataframes to be created
@@ -128,7 +127,10 @@ if __name__ == "__main__":
     }
     #loops through the names of the dataframes and loads the training data to csv
     for key, value in df_table_names.items():
-        load_train_data_to_csv(get_sales_train_data(sales_df_template, fill_method=key), value)
+        sales_filled_df = get_sales_train_data(sales_df_template, fill_method=key)
+        if (key == "zero"):
+            load_full_data_to_csv(get_full_sales_data(sales_filled_df, items_data), "sales_full_0")
+        load_train_data_to_csv(sales_filled_df, value)
     
     
     
