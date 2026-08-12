@@ -5,10 +5,10 @@ from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.ensemble import RandomForestRegressor
-from . import CAT_FEATURES, NUMERIC_COLS, NUMERIC_FEATURES, RAND_STATE, TARGET_COL
+from . import CAT_FEATURES, NUMERIC_FEATURES, RAND_STATE, TARGET_COL
 
 
-def split_data(data: pd.DataFrame) -> dict[str, pd.DataFrame]:
+def split_data(data: pd.DataFrame) -> tuple[pd.DataFrame]:
     """
     Splits the sales training data into training and test subsets, and returns 
     a dictionary containing the training and test subsets data
@@ -20,12 +20,7 @@ def split_data(data: pd.DataFrame) -> dict[str, pd.DataFrame]:
     #Splitting data into train and test splits
     x_train, x_test, y_train, y_test = train_test_split(train_df, 
             data[TARGET_COL], test_size=0.3, random_state=RAND_STATE)
-    return {
-        "train_features" : x_train,
-        "test_features": x_test,
-        "train_target": y_train,
-        "test_target": y_test
-    }
+    return x_train, x_test, y_train, y_test
 
 def train_random_forest(x_train, y_train):
     param_grid = {
