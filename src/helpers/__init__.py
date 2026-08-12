@@ -1,4 +1,4 @@
-CAT_FEATURES:list[str] = ["month_block_num", "shop_id", "item_id", "item_category_id"]
+CAT_FEATURES:list[str] = ["month_block_num", "shop_id", "item_id"]
 CAT_COLS:list[str] = ["month_block_num", "shop_id", "item_id", "item_category_id"]
 NUMERIC_COLS:list[str] = ["item_price", "item_cnt_month"]
 NUMERIC_FEATURES:list[str] = ["item_price"]
