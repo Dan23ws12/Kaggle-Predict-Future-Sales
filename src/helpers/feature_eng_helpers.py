@@ -5,7 +5,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.ensemble import RandomForestRegressor
-from src.helpers import CAT_FEATURES, NUMERIC_COLS, NUMERIC_FEATURES, RAND_STATE, TARGET_COL
+from . import CAT_FEATURES, NUMERIC_COLS, NUMERIC_FEATURES, RAND_STATE, TARGET_COL
 
 
 def split_data(data: pd.DataFrame) -> dict[str, pd.DataFrame]:
