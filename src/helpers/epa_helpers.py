@@ -4,22 +4,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import chi2_contingency
 from dotenv import load_dotenv
-import os
 import seaborn as sns
+from . import CAT_COLS, NUMERIC_COLS, TARGET_COL
 load_dotenv()
-
-
-cat_cols = ["shop_id", "item_id", "item_category_id", "month_block_num"]
-numeric_cols = ["item_price", "item_cnt_month"]
-target_col = "item_cnt_month"
 
 def modify_categorical_columns(df:pd.DataFrame) -> pd.DataFrame:
     """
     Modifies the categorical columns in a given dataframe by concatenating
     the item category with the item id
     """
-    new_df = df[numeric_cols]
-    for col in cat_cols:
+    new_df = df[NUMERIC_COLS]
+    for col in CAT_COLS:
         new_df[col] = df[col].astype(str)
     return new_df
 
@@ -48,15 +43,15 @@ def get_nominal_var_corr_matrix(df: pd.DataFrame) -> pd.DataFrame:
     in a given dataframe
     """
     # empty correlation matrix dataframe
-    corr_matrix = pd.DataFrame(index=cat_cols, columns=cat_cols)
-    num_cat_vars = len(cat_cols)
+    corr_matrix = pd.DataFrame(index=CAT_COLS, columns=CAT_COLS)
+    num_cat_vars = len(CAT_COLS)
     corr_values = {}
     for k in range(num_cat_vars):
         corr_values[k] = []
 
     for i in range(num_cat_vars):
         for j in range(i, num_cat_vars):
-            vari, varj = [cat_cols[i], cat_cols[j]]
+            vari, varj = [CAT_COLS[i], CAT_COLS[j]]
             # matrix diagonal case (in correlation matrix)
             # m at row i and column i is ~1.00
             if (i == j):
@@ -71,14 +66,14 @@ def get_nominal_var_corr_matrix(df: pd.DataFrame) -> pd.DataFrame:
                 corr_values.get(j).append(corr_coef)
     
     for k in range(num_cat_vars):
-        corr_matrix[cat_cols[k]] = corr_values.get(k)
+        corr_matrix[CAT_COLS[k]] = corr_values.get(k)
     return corr_matrix
 
 def get_charts_for_cat_vars(df:pd.DataFrame, colname:str):
     """
     Plots a pie chart and bar chart for a given categorical variable
     """
-    if colname not in cat_cols:
+    if colname not in CAT_COLS:
         raise ValueError("Column is not a categorical variable")
     label_name_dict = {
         "shop_id": "Shop",
@@ -89,22 +84,22 @@ def get_charts_for_cat_vars(df:pd.DataFrame, colname:str):
     # Create a figure with a Pie Chart and a Bar Chart side-by-side
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
-    # 1. Pie Chart - Top 5 Shops Share
-    top_shops = df[colname].value_counts().head(10)
+    # 1. Pie Chart - Top 10 by Number of Sales
+    top_10 = df[colname].value_counts().head(10)
     axes[0].pie(
-        top_shops,
-        labels=[f'{label_name_dict[colname]} {s}' for s in top_shops.index],
+        top_10,
+        labels=[f'{label_name_dict[colname]} {s}' for s in top_10.index],
         autopct='%1.1f%%',
         startangle=140,
-        colors=plt.cm.Set3.colors[:len(top_shops)]
+        colors=plt.cm.Set3.colors[:len(top_10)]
     )
     axes[0].set_title(f'Top 10 {label_name_dict[colname]} by Number of Sales (Pie Chart)', fontsize=14)
 
-    # 2. Bar Chart - Top 10 Item Categories Count
-    top_cats = df[[colname,"item_cnt_month"]].groupby(colname).sum().sort_values("item_cnt_month",ascending=False).head(10).reset_index()
-    axes[1].bar(
-        [f'{label_name_dict[colname]} {c}' for c in top_cats[colname]],
-        top_cats["item_cnt_month"],
+    # 2. Bar Chart - Top 10 by Count of Items Sold
+    top_10_by_sales = df[[colname,"item_cnt_month"]].groupby(colname).sum().sort_values("item_cnt_month",ascending=False).head(10).reset_index()
+    axes[1].bar(            
+        [f'{label_name_dict[colname]} {c}' for c in top_10_by_sales[colname]],
+        top_10_by_sales["item_cnt_month"],
         color='cornflowerblue',
         edgecolor='navy'
     )
