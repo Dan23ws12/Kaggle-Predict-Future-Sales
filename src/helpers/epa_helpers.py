@@ -8,6 +8,47 @@ import seaborn as sns
 from . import CAT_COLS, NUMERIC_COLS, TARGET_COL
 load_dotenv()
 
+def get_df_col_and_datatypes(df: pd.DataFrame):
+    """
+    this function prints the shape, columns, types, description, missing values, and unique values of the DataFrame.
+    """
+    print(f"columns: \n {df.columns.tolist()}")
+    print(f"types: \n {df.dtypes}")
+
+def get_basic_stats(df: pd.DataFrame):
+    """
+    This function returns a dictionary of basic statistics for a given DataFrame.
+    """
+    print(f"shape: {df.shape}")
+    df_numeric_cols = [col for col in df.columns if col not in CAT_COLS]
+    df_categorical_cols = [col for col in df.columns if col in CAT_COLS]
+    print(f"dataframe basic numeric statistics \n{df[df_numeric_cols].describe()}")
+    print(f"dataframe categorical statistics \n {df[df_categorical_cols].map(lambda x: str(x)).describe()}")
+
+def check_data_validity(df: pd.DataFrame):
+    """
+    This function checks the validity of the data in a given DataFrame by checking
+    for missing values, invalid values and unique values
+    """
+    print(f"missing values: \n {df.isnull().sum()}")
+    print(f"unique values: \n {df.nunique()}")
+    numeric_cols = []
+    non_numeric_cols = []
+    for col in df.columns:
+        # checks if the column contains numeric values and is not a categorical column
+        if (col not in CAT_COLS) and (df[col].dtype in ['int64', 'float64']):
+            numeric_cols.append(col)
+        else:
+            non_numeric_cols.append(col)
+    # numerical values in this case are expected to be positive
+    invalid_numeric_values = df[numeric_cols].map(lambda x: 1 if x<0 else 0).sum()
+    # categorical values in this case are expected to be non-empty strings or numbers
+    invalid_cat_values = df[non_numeric_cols].map(lambda x: 1 if ((pd.isna(x)) or (str(x)=='')) else 0).sum()
+    print(f"invalid numeric values: \n {invalid_numeric_values}")
+    print(f"invalid categorical values: \n {invalid_cat_values}")
+
+
+
 def modify_categorical_columns(df:pd.DataFrame) -> pd.DataFrame:
     """
     Modifies the categorical columns in a given dataframe by concatenating
