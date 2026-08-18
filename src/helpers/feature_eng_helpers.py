@@ -91,7 +91,7 @@ def replace_infrequent_values(df: pd.DataFrame) -> pd.DataFrame:
     # only shop_id and item_id can have values replaced with "other"
     increments_by_col = {
         "shop_id": 2,
-        "item_id": 2
+        "item_id": 1000
     }
     new_df = df.copy()
     for col in CAT_FEATURES:
