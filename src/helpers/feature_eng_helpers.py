@@ -39,3 +39,57 @@ def train_random_forest(x_train, y_train):
     print("best parameters")
     print(grid_search.best_params_)
     return grid_search.best_estimator_
+
+def get_top_by_col(df: pd.DataFrame, colname: str, increment: int) -> pd.DataFrame:
+    """
+    Returns a DataFrame of shop IDs and their frequencies sorted in descending order,
+    limited to the point where the cumulative sum of frequencies is >= 90% of total records.
+    Iterates in increments of 2.
+    """
+    frequency_df = df[colname].value_counts().reset_index()
+    frequency_df.columns = [colname, 'frequency']
+    frequency_df = frequency_df.sort_values(by='frequency', ascending=False).reset_index(drop=True)
+    
+    total_records = len(df)
+    target = 0.9 * total_records
+    for i in range(0, len(frequency_df), increment):
+        cumsum = frequency_df.loc[0:i, 'frequency'].sum()
+        if cumsum >= target:
+            return frequency_df.iloc[: i + 1]
+            
+    return frequency_df
+
+def replace_values(df: pd.DataFrame, colname: str, ref_series: pd.Series) -> pd.DataFrame:
+    """
+    Returns a copy of df where values in colname that are not present in ref_series
+    are replaced with "other".
+    If colname is not a column in df, raises a ValueError.
+    """
+    if (colname not in df.columns):
+        raise ValueError(f"{colname} is not a column in the DataFrame")
+    new_df = df.copy()
+    new_df[colname] = new_df[colname].where(new_df[colname].isin(ref_series), "other")
+    return new_df
+
+def replace_infrequent_values(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Returns a copy of a sales training dataset df where 
+    values of categorical features that are not in the top 90% of the dataset
+    are replaced with "other".
+    """
+    # Increments by column for getting the top 90% of values
+    # this is to avoid the case where a column has a lot of unique values
+    # only shop_id and item_id can have values replaced with "other"
+    increments_by_col = {
+        "shop_id": 2,
+        "item_id": 2
+    }
+    new_df = df.copy()
+    for col in CAT_FEATURES:
+        increment = increments_by_col.get(col, 2)
+        if (increment):
+            top_90 = get_top_by_col(new_df, col, increment)
+            new_df = replace_values(new_df, col, top_90[col])
+        
+        
+    return new_df
