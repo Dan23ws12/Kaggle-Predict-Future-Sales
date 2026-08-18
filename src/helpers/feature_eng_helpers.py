@@ -52,8 +52,17 @@ def get_top_by_col(df: pd.DataFrame, colname: str, increment: int) -> pd.DataFra
     
     total_records = len(df)
     target = 0.9 * total_records
+    cumsum, last_index = 0, 0
     for i in range(0, len(frequency_df), increment):
-        cumsum = frequency_df.loc[0:i, 'frequency'].sum()
+        # first iteration, added so that the cumulative sum 
+        # is calculated correctly and the function doesn't have to 
+        # sum from the beginning of the dataframe each time
+        if (last_index == 0):
+            cumsum = frequency_df.loc[0:i, 'frequency'].sum()
+            last_index = i
+        else:
+            cumsum += frequency_df.loc[last_index:i, 'frequency'].sum() # cumulative sum of frequencies
+            last_index = i # last index of the cumulative sum
         if cumsum >= target:
             return frequency_df.iloc[: i + 1]
             
