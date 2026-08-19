@@ -68,6 +68,7 @@ def get_train_data_template(sales: pd.DataFrame) -> pd.DataFrame:
     # removing duplicate rows (no duplicate rows in other tables)
     sales_train_df = sales.drop_duplicates()
     sales_train_df.rename(columns={"date_block_num": "month_block_num"}, inplace=True)
+    sales_train_df["date"] = pd.to_datetime(sales_train_df["date"], format="%d.%m.%Y")
     # replacing the item_price with the absolute value
     sales_train_df["item_price"] = sales_train_df["item_price"].map(lambda x: abs(x))
     return sales_train_df
