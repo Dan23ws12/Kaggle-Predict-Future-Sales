@@ -126,6 +126,16 @@ class SalesDataPreprocessor:
         sales_df["item_months_sold"] = sales_df["item_id"].map(months_sold)
         return sales_df
 
+    def add_avg_item_price_per_month(self, sales_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Returns a copy of the sales training dataframe with an avg_item_price_per_month column
+        added, representing the average item price for each item in each month block.
+        """
+        sales_df["avg_item_price_per_month"] = (
+            sales_df.groupby(["item_id", "month_block_num"])["item_price"].transform("mean")
+        )
+        return sales_df
+
     def replace_infrequent_values(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Returns the sales training dataset df where 
