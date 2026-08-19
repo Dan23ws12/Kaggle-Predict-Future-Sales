@@ -7,28 +7,18 @@ from .data_preprocessor import SalesDataPreprocessor
 from . import CAT_FEATURES, NUMERIC_FEATURES, RAND_STATE, TARGET_COL
 
 data_preprocessor = SalesDataPreprocessor()
-def split_data(data: pd.DataFrame) -> tuple[pd.DataFrame]:
-    """
-    Splits the sales training data into training and test subsets, and returns 
-    a dictionary containing the training and test subsets data
-    """
-    col_transformer = ColumnTransformer([("numeric col z scaling", StandardScaler(), NUMERIC_FEATURES),
-        ("one hot encoding", OneHotEncoder(), CAT_FEATURES)]
-    )
-    train_df = col_transformer.fit_transform(data.drop(columns=[TARGET_COL]))
-    #Splitting data into train and test splits
-    x_train, x_test, y_train, y_test = train_test_split(train_df, 
-            data[TARGET_COL], test_size=0.3, random_state=RAND_STATE)
-    return x_train, x_test, y_train, y_test
 
-def preprocess_and_split_data(data: pd.DataFrame) -> pd.DataFrame:
+def preprocess_and_split_data(data: pd.DataFrame) -> tuple[pd.DataFrame]:
     """
     Preprocesses the sales training data by replacing infrequent values and 
     splitting the data into training and test subsets.
     Returns a dictionary containing the training and test subsets data
     """
-    data = data_preprocessor.replace_infrequent_values(data)
-    return data_preprocessor.split_data(data)
+    new_data = data.copy()
+    new_data = data_preprocessor.replace_infrequent_values(new_data)
+    new_data = data_preprocessor.add_features(new_data)
+    new_data = new_data.drop(columns=["date"])
+    return data_preprocessor.split_data(new_data)
 
 def train_random_forest(x_train, y_train):
     param_grid = {
