@@ -80,58 +80,62 @@ class SalesDataPreprocessor:
 
     def replace_vals_by_col(self, df: pd.DataFrame, colname: str, top_vals_sr: pd.Series) -> pd.DataFrame:
         """
-        Returns a copy of df where values in colname that are not present in top_vals_df
+        Returns the df where values in colname that are not present in top_vals_df
         are replaced with "other".
         If colname is not a column in df, raises a ValueError.
         """
         if (colname not in df.columns):
             raise ValueError(f"{colname} is not a column in the DataFrame")
-        new_df = df.copy()
-        new_df[colname] = new_df[colname].where(new_df[colname].isin(top_vals_sr), "other")
-        new_df[colname] = new_df[colname].astype(str)
-        return new_df
+        df[colname] = df[colname].where(df[colname].isin(top_vals_sr), "other")
+        df[colname] = df[colname].astype(str)
+        return df
 
     def add_month_length(self, sales_df: pd.DataFrame) -> pd.DataFrame:
         """
-        Returns a copy of the sales training dataframe with a month_block_length column
+        Returns the sales training dataframe with a month_block_length column
         added, representing the difference between the latest and earliest date in each
         month block.
         """
-        new_df = sales_df.copy()
-        dates = pd.to_datetime(new_df["date"])
-        month_lengths = dates.groupby(new_df["month_block_num"]).agg(lambda s: s.max() - s.min())
-        new_df["month_block_length"] = new_df["month_block_num"].map(month_lengths)
-        return new_df
+        dates = pd.to_datetime(sales_df["date"])
+        month_lengths = dates.groupby(sales_df["month_block_num"]).agg(lambda s: s.max() - s.min())
+        sales_df["month_block_length"] = sales_df["month_block_num"].map(month_lengths)
+        return sales_df
 
     def add_item_name_length(self, sales_df: pd.DataFrame) -> pd.DataFrame:
         """
-        Returns a copy of the sales training dataframe with an item_name_length column
+        Returns the sales training dataframe with an item_name_length column
         added, representing the number of alphanumeric characters in the item name
         associated with each item_id (whitespace and special characters are excluded).
         """
         if self._items_df is None:
             self._items_df = pd.read_csv(os.getenv("ORIGINAL_DATA_PATH") + "/items.csv")
-
-        new_df = sales_df.copy()
         name_lengths = (
             self._items_df.set_index("item_id")["item_name"]
             .map(lambda name: sum(1 for c in str(name) if c.isalnum()))
         )
-        new_df["item_name_length"] = new_df["item_id"].map(name_lengths)
-        return new_df
+        sales_df["item_name_length"] = sales_df["item_id"].map(name_lengths)
+        return sales_df
+
+    def add_item_months_sold(self, sales_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Returns the sales training dataframe with an item_months_sold column
+        added, representing the number of distinct months during which each item was sold.
+        """
+        
+        months_sold = sales_df.groupby("item_id")["month_block_num"].nunique()
+        sales_df["item_months_sold"] = sales_df["item_id"].map(months_sold)
+        return sales_df
 
     def replace_infrequent_values(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Returns a copy of a sales training dataset df where 
+        Returns the sales training dataset df where 
         values of categorical features that are not in the top 90% of the dataset
         are replaced with "other".
         """
-        
-        new_df = df.copy()
         if (not self.isInitialized):
-            self.initialize(new_df)
+            self.initialize(df)
         for col in CAT_FEATURES:
             top_vals_df = self.top_vals_by_col.get(col)
             if (top_vals_df is not None):
-                new_df = self.replace_vals_by_col(new_df, col, top_vals_df[col])
-        return new_df
+                df = self.replace_vals_by_col(df, col, top_vals_df[col])
+        return df
