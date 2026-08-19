@@ -10,8 +10,6 @@ class SalesDataTransformer:
         self.increments_by_col = {"shop_id": 2, "item_id": 1000}
         self.isInitialized = False
     
-    def isInitialized(self) -> bool:
-        return self.isInitialized
     
     def initialize(self, sales_df: pd.DataFrame):
         """
@@ -86,6 +84,7 @@ class SalesDataTransformer:
             raise ValueError(f"{colname} is not a column in the DataFrame")
         new_df = df.copy()
         new_df[colname] = new_df[colname].where(new_df[colname].isin(top_vals_sr), "other")
+        new_df[colname] = new_df[colname].astype(str)
         return new_df
 
     def replace_infrequent_values(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -96,7 +95,7 @@ class SalesDataTransformer:
         """
         
         new_df = df.copy()
-        if (not self.isInitialized()):
+        if (not self.isInitialized):
             self.initialize(new_df)
         for col in CAT_FEATURES:
             top_vals_df = self.top_vals_by_col.get(col)
