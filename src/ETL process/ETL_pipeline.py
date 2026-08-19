@@ -2,7 +2,7 @@ import pandas as pd
 import os
 from dotenv import load_dotenv
 
-
+ACCEPTABLE_TABLE_NAMES = ["sales_train", "items", "shops", "test", "item_categories"]
 
 def data_extraction(table_name: str)-> pd.DataFrame:
     """ 
@@ -10,16 +10,8 @@ def data_extraction(table_name: str)-> pd.DataFrame:
     prediction models
     """
     
-    if table_name == "sales_train":
-        return pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/sales_train.csv')
-    elif table_name == "items":
-        return pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/items.csv')
-    elif table_name == "shops":
-        return pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/shops.csv')
-    elif table_name == "test":
-        return pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/test.csv')
-    elif table_name == "item_categories":
-        return pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/item_categories.csv')
+    if table_name in ACCEPTABLE_TABLE_NAMES:
+        return pd.read_csv(os.getenv('ORIGINAL_DATA_PATH') + '/' + table_name + '.csv')
     else:
         raise ValueError(f"Table {table_name} not found")
 
@@ -73,12 +65,9 @@ def get_train_data_template(sales: pd.DataFrame) -> pd.DataFrame:
     This function returns a remplate so that other functions can 
     fill in item_cnt_day with the desired values
     """
-    sales_train_df = sales.copy(deep=False)
     # removing duplicate rows (no duplicate rows in other tables)
-    sales_train_df.drop_duplicates(inplace=True)
+    sales_train_df = sales.drop_duplicates(inplace=True)
     sales_train_df.rename(columns={"date_block_num": "month_block_num"}, inplace=True)
-    # dropping date column as it is no longer needed
-    sales_train_df.drop(columns=["date"], inplace=True)
     # replacing the item_price with the absolute value
     sales_train_df["item_price"] = sales_train_df["item_price"].map(lambda x: abs(x))
     return sales_train_df
