@@ -1,4 +1,6 @@
+import os
 import pandas as pd
+from dotenv import load_dotenv
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
@@ -9,6 +11,8 @@ class SalesDataPreprocessor:
         self.top_vals_by_col = {"shop_id": None, "item_id": None}
         self.increments_by_col = {"shop_id": 2, "item_id": 1000}
         self.isInitialized = False
+        self._items_df = None
+        load_dotenv()
     
     
     def initialize(self, sales_df: pd.DataFrame):
@@ -97,6 +101,23 @@ class SalesDataPreprocessor:
         dates = pd.to_datetime(new_df["date"])
         month_lengths = dates.groupby(new_df["month_block_num"]).agg(lambda s: s.max() - s.min())
         new_df["month_block_length"] = new_df["month_block_num"].map(month_lengths)
+        return new_df
+
+    def add_item_name_length(self, sales_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Returns a copy of the sales training dataframe with an item_name_length column
+        added, representing the number of alphanumeric characters in the item name
+        associated with each item_id (whitespace and special characters are excluded).
+        """
+        if self._items_df is None:
+            self._items_df = pd.read_csv(os.getenv("ORIGINAL_DATA_PATH") + "/items.csv")
+
+        new_df = sales_df.copy()
+        name_lengths = (
+            self._items_df.set_index("item_id")["item_name"]
+            .map(lambda name: sum(1 for c in str(name) if c.isalnum()))
+        )
+        new_df["item_name_length"] = new_df["item_id"].map(name_lengths)
         return new_df
 
     def replace_infrequent_values(self, df: pd.DataFrame) -> pd.DataFrame:
