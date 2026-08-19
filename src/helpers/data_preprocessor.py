@@ -87,6 +87,18 @@ class SalesDataPreprocessor:
         new_df[colname] = new_df[colname].astype(str)
         return new_df
 
+    def add_month_length(self, sales_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Returns a copy of the sales training dataframe with a month_block_length column
+        added, representing the difference between the latest and earliest date in each
+        month block.
+        """
+        new_df = sales_df.copy()
+        dates = pd.to_datetime(new_df["date"])
+        month_lengths = dates.groupby(new_df["month_block_num"]).agg(lambda s: s.max() - s.min())
+        new_df["month_block_length"] = new_df["month_block_num"].map(month_lengths)
+        return new_df
+
     def replace_infrequent_values(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Returns a copy of a sales training dataset df where 
