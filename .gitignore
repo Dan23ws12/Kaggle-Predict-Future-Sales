@@ -3,4 +3,5 @@ original_data/
 __pycache__/
 pvenv/
 .ipynb_checkpoints/
-#data/clean\ data/
+data/clean data/
+data/full data/
