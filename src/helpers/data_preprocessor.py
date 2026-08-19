@@ -136,6 +136,32 @@ class SalesDataPreprocessor:
         )
         return sales_df
 
+    def add_avg_sales_per_shop(self, sales_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Returns a copy of the sales training dataframe with an avg_sales_per_shop column
+        added, representing the average number of sales per shop for each month block.
+        """
+        sales_per_shop = (
+            sales_df.groupby(["month_block_num", "shop_id"])[TARGET_COL]
+            .sum()
+        )
+        avg_sales_per_shop = sales_per_shop.groupby("month_block_num").mean()
+        sales_df["avg_sales_per_shop"] = sales_df["month_block_num"].map(avg_sales_per_shop)
+        return sales_df
+
+    def add_avg_sales_per_item(self, sales_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Returns a copy of the sales training dataframe with an avg_sales_per_item column
+        added, representing the average number of sales per item for each month block.
+        """
+        sales_per_item = (
+            sales_df.groupby(["month_block_num", "item_id"])[TARGET_COL]
+            .sum()
+        )
+        avg_sales_per_item = sales_per_item.groupby("month_block_num").mean()
+        sales_df["avg_sales_per_item"] = sales_df["month_block_num"].map(avg_sales_per_item)
+        return sales_df
+
     def replace_infrequent_values(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Returns the sales training dataset df where 
