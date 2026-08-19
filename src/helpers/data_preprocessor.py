@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from . import CAT_FEATURES, NUMERIC_FEATURES, RAND_STATE, TARGET_COL
 
-class SalesDataTransformer:
+class SalesDataPreprocessor:
     def __init__(self):
         self.top_vals_by_col = {"shop_id": None, "item_id": None}
         self.increments_by_col = {"shop_id": 2, "item_id": 1000}
