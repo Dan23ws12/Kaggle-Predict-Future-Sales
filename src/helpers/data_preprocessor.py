@@ -41,8 +41,9 @@ class SalesDataPreprocessor:
         Splits the sales training data into training and test subsets, and returns 
         a tuple containing the training and test subsets data
         """
+        scalable_numeric_features = [feature for feature in NUMERIC_FEATURES if feature != "month_block_num"]
         col_transformer = ColumnTransformer([
-            ("numeric col z scaling", StandardScaler(), NUMERIC_FEATURES),
+            ("numeric col z scaling", StandardScaler(), scalable_numeric_features),
             ("one hot encoding", OneHotEncoder(), CAT_FEATURES)])
         train_df = col_transformer.fit_transform(sales_df.drop(columns=[TARGET_COL]))
         #Splitting data into train and test splits
@@ -106,6 +107,7 @@ class SalesDataPreprocessor:
         Returns the sales training dataframe with an item_name_length column
         added, representing the number of alphanumeric characters in the item name
         associated with each item_id (whitespace and special characters are excluded).
+        Rows with item_id "other" are assigned a length of 5.
         """
         if self._items_df is None:
             self._items_df = pd.read_csv(os.getenv("ORIGINAL_DATA_PATH") + "/items.csv")
@@ -113,7 +115,14 @@ class SalesDataPreprocessor:
             self._items_df.set_index("item_id")["item_name"]
             .map(lambda name: sum(1 for c in str(name) if c.isalnum()))
         )
-        sales_df["item_name_length"] = sales_df["item_id"].map(name_lengths)
+
+        def get_item_name_length(item_id) -> int:
+            if str(item_id) == "other":
+                return 5
+            lookup_id = int(item_id) if isinstance(item_id, str) and item_id.isdigit() else item_id
+            return name_lengths[lookup_id]
+
+        sales_df["item_name_length"] = sales_df["item_id"].apply(get_item_name_length)
         return sales_df
 
     def add_item_months_sold(self, sales_df: pd.DataFrame) -> pd.DataFrame:
