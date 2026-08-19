@@ -3,10 +3,10 @@ from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.ensemble import RandomForestRegressor
-from .data_transformer import SalesDataTransformer
+from .data_preprocessor import SalesDataPreprocessor
 from . import CAT_FEATURES, NUMERIC_FEATURES, RAND_STATE, TARGET_COL
 
-data_transformer = SalesDataTransformer()
+data_preprocessor = SalesDataPreprocessor()
 def split_data(data: pd.DataFrame) -> tuple[pd.DataFrame]:
     """
     Splits the sales training data into training and test subsets, and returns 
@@ -27,8 +27,8 @@ def preprocess_and_split_data(data: pd.DataFrame) -> pd.DataFrame:
     splitting the data into training and test subsets.
     Returns a dictionary containing the training and test subsets data
     """
-    data = data_transformer.replace_infrequent_values(data)
-    return data_transformer.split_data(data)
+    data = data_preprocessor.replace_infrequent_values(data)
+    return data_preprocessor.split_data(data)
 
 def train_random_forest(x_train, y_train):
     param_grid = {
