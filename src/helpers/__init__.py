@@ -1,8 +1,19 @@
-CAT_FEATURES:list[str] = ["month_block_num", "shop_id", "item_id"]
+# categorical columns used (for model training purposes)
+CAT_FEATURES:list[str] = ["shop_id", "item_id"]
+# categorical columns used (for exploratory analysis purposes)
 CAT_COLS:list[str] = ["month_block_num", "shop_id", "item_id", "item_category_id"]
+# numeric columns used (for exploratory analysis purposes)
 NUMERIC_COLS:list[str] = ["item_price", "item_cnt_month"]
-NUMERIC_FEATURES:list[str] = ["item_price"]
+# numeric columns used (for model training purposes)
+NUMERIC_FEATURES:list[str] = [
+    "month_block_num", "month_block_length", 
+    "item_name_length", "item_months_sold", 
+    "avg_item_price_per_month", "avg_sales_per_shop", 
+    "avg_sales_per_item", "item_price"
+]
+# random state used for splitting the data into training and test sets and training the models
 RAND_STATE:int = 35
+# target column used for model training
 TARGET_COL:str = "item_cnt_month"
 
 
