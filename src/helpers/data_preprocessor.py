@@ -138,7 +138,7 @@ class SalesDataPreprocessor:
 
     def add_avg_sales_per_shop(self, sales_df: pd.DataFrame) -> pd.DataFrame:
         """
-        Returns a copy of the sales training dataframe with an avg_sales_per_shop column
+        Returns the sales training dataframe with an avg_sales_per_shop column
         added, representing the average number of sales per shop for each month block.
         """
         sales_per_shop = (
@@ -151,7 +151,7 @@ class SalesDataPreprocessor:
 
     def add_avg_sales_per_item(self, sales_df: pd.DataFrame) -> pd.DataFrame:
         """
-        Returns a copy of the sales training dataframe with an avg_sales_per_item column
+        Returns the sales training dataframe with an avg_sales_per_item column
         added, representing the average number of sales per item for each month block.
         """
         sales_per_item = (
@@ -161,6 +161,19 @@ class SalesDataPreprocessor:
         avg_sales_per_item = sales_per_item.groupby("month_block_num").mean()
         sales_df["avg_sales_per_item"] = sales_df["month_block_num"].map(avg_sales_per_item)
         return sales_df
+
+    def add_features(self, sales_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Returns a copy of the sales training dataframe with all engineered feature columns added.
+        """
+        new_df = sales_df.copy()
+        new_df = self.add_month_length(new_df)
+        new_df = self.add_item_name_length(new_df)
+        new_df = self.add_item_months_sold(new_df)
+        new_df = self.add_avg_item_price_per_month(new_df)
+        new_df = self.add_avg_sales_per_shop(new_df)
+        new_df = self.add_avg_sales_per_item(new_df)
+        return new_df
 
     def replace_infrequent_values(self, df: pd.DataFrame) -> pd.DataFrame:
         """
