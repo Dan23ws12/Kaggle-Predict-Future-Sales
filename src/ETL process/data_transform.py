@@ -66,7 +66,7 @@ def get_train_data_template(sales: pd.DataFrame) -> pd.DataFrame:
     fill in item_cnt_day with the desired values
     """
     # removing duplicate rows (no duplicate rows in other tables)
-    sales_train_df = sales.drop_duplicates(inplace=True)
+    sales_train_df = sales.drop_duplicates()
     sales_train_df.rename(columns={"date_block_num": "month_block_num"}, inplace=True)
     # replacing the item_price with the absolute value
     sales_train_df["item_price"] = sales_train_df["item_price"].map(lambda x: abs(x))
@@ -88,13 +88,4 @@ def get_item_cnt_month(df: pd.DataFrame)-> dict[str, pd.DataFrame]:
     df = df.merge(item_cnt_month, on=["item_id", "shop_id", "month_block_num"], how="left")
     return df
 
-
-def load_full_data_to_csv(sales: pd.DataFrame, table_name:str):
-    """This function loads the full dataset to the csv files"""
-    sales.to_csv(os.getenv('FULL_DATA_PATH') + '/' + table_name + '.csv', index=False)
-
-def load_train_data_to_csv(train_data: pd.DataFrame, table_name:str):
-    """This function loads the training dataset to the csv files"""
-    train_data.to_csv(os.getenv('CLEAN_DATA_PATH') + '/' + table_name + '.csv', index=False)
-    
     
