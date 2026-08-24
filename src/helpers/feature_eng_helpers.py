@@ -1,7 +1,5 @@
 import pandas as pd
-from sklearn.compose import ColumnTransformer
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.feature_selection import RFECV
 from sklearn.ensemble import RandomForestRegressor
 from .data_preprocessor import SalesDataPreprocessor
 from . import RAND_STATE
@@ -22,8 +20,9 @@ def preprocess_and_split_data(data: pd.DataFrame) -> tuple[pd.DataFrame]:
     return data_preprocessor.split_data(new_data)
 
 def train_random_forest(n_estimators: int, min_samples_leaf: int, max_depth: Optional[int] = None):
-    rand_forest = RandomForestRegressor(random_state=RAND_STATE, n_jobs=-1, 
+    rand_forest = RandomForestRegressor(random_state=RAND_STATE, 
         n_estimators=n_estimators, min_samples_leaf=min_samples_leaf, 
         max_depth=max_depth, verbose=1)
-    return rand_forest
+    rfe = RFECV(estimator=rand_forest, step=1, cv=1000, scoring=None, min_features_to_select=1,verbose=0, n_jobs=-1)
+    return rfe
 
