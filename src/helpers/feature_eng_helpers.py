@@ -16,7 +16,6 @@ def preprocess_and_split_data(data: pd.DataFrame) -> tuple[pd.DataFrame]:
     new_data = data.copy()
     new_data = data_preprocessor.replace_infrequent_values(new_data)
     new_data = data_preprocessor.add_features(new_data)
-    new_data = new_data.drop(columns=["date"])
     return data_preprocessor.split_data(new_data)
 
 def train_random_forest(n_estimators: int, min_samples_leaf: int, max_depth: Optional[int] = None):
