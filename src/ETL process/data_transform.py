@@ -43,7 +43,7 @@ def get_sales_train_data(sales:pd.DataFrame, fill_method="zero"):
     elif fill_method == "abs":
         sales_train_df["item_cnt_day"] = sales_train_df["item_cnt_day"].abs()
     elif fill_method == "mean":
-        mean_val = sales_train_df["item_cnt_day"].mean()
+        mean_val = sales_train_df.loc[sales_train_df["item_cnt_day"] >= 0, "item_cnt_day"].mean()
         sales_train_df["item_cnt_day"] = sales_train_df["item_cnt_day"].map(lambda x: x if x >= 0 else mean_val)
     elif fill_method == "bfill":
         sales_train_df["item_cnt_day"] = sales_train_df["item_cnt_day"].mask(sales_train_df["item_cnt_day"] < 0)
