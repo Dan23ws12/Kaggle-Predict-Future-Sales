@@ -3,7 +3,7 @@ CAT_FEATURES:list[str] = ["shop_id", "item_id"]
 # categorical columns used (for exploratory analysis purposes)
 CAT_COLS:list[str] = ["month_block_num", "shop_id", "item_id", "item_category_id"]
 # numeric columns used (for exploratory analysis purposes)
-NUMERIC_COLS:list[str] = ["item_price", "item_cnt_month"]
+NUMERIC_COLS:list[str] = ["item_price", "item_cnt_month", "item_cnt_day"]
 # numeric columns used (for model training purposes)
 NUMERIC_FEATURES:list[str] = [
     "month_block_num", "month_block_length", 
