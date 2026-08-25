@@ -46,6 +46,7 @@ class SalesDataPreprocessor:
             ("numeric col z scaling", StandardScaler(), scalable_numeric_features),
             ("one hot encoding", OneHotEncoder(), CAT_FEATURES)])
         train_df = sales_df.drop(columns=[TARGET_COL, "date"])
+        train_df = self.downgrade_numeric(train_df)
         train_df = col_transformer.fit_transform(train_df)
         #Splitting data into train and test splits
         x_train, x_test, y_train, y_test = train_test_split(train_df, 
@@ -187,6 +188,17 @@ class SalesDataPreprocessor:
         new_df = self.add_avg_sales_per_shop(new_df)
         new_df = self.add_avg_sales_per_item(new_df)
         return new_df
+
+    def downgrade_numeric(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Returns the dataframe with int64 columns converted to int32 and float64 columns
+        converted to float32.
+        """
+        for col in df.select_dtypes(include=["int64"]).columns:
+            df[col] = df[col].astype("int32")
+        for col in df.select_dtypes(include=["float64"]).columns:
+            df[col] = df[col].astype("float32")
+        return df
 
     def replace_infrequent_values(self, df: pd.DataFrame) -> pd.DataFrame:
         """
