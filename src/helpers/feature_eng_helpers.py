@@ -1,5 +1,4 @@
 import pandas as pd
-from sklearn.feature_selection import RFECV
 from sklearn.ensemble import RandomForestRegressor
 from .data_preprocessor import SalesDataPreprocessor
 from . import RAND_STATE
@@ -32,6 +31,5 @@ def train_random_forest(n_estimators: int, min_samples_leaf: int, max_depth: Opt
     rand_forest = RandomForestRegressor(random_state=RAND_STATE, 
         n_estimators=n_estimators, min_samples_leaf=min_samples_leaf, 
         max_depth=max_depth, verbose=0, n_jobs=-2)
-    rfe = RFECV(estimator=rand_forest, step=1, cv=1000, scoring=None, min_features_to_select=1,verbose=0, n_jobs=-2)
-    return rfe
+    return rand_forest
 
