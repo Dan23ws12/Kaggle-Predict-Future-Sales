@@ -45,7 +45,8 @@ class SalesDataPreprocessor:
         col_transformer = ColumnTransformer([
             ("numeric col z scaling", StandardScaler(), scalable_numeric_features),
             ("one hot encoding", OneHotEncoder(), CAT_FEATURES)])
-        train_df = col_transformer.fit_transform(sales_df.drop(columns=[TARGET_COL]))
+        train_df = sales_df.drop(columns=[TARGET_COL, "date"])
+        train_df = col_transformer.fit_transform(train_df)
         #Splitting data into train and test splits
         x_train, x_test, y_train, y_test = train_test_split(train_df, 
                 sales_df[TARGET_COL], test_size=0.3, random_state=RAND_STATE)
@@ -94,12 +95,15 @@ class SalesDataPreprocessor:
     def add_month_length(self, sales_df: pd.DataFrame) -> pd.DataFrame:
         """
         Returns the sales training dataframe with a month_block_length column
-        added, representing the difference between the latest and earliest date in each
+        added, representing the difference between the latest and earliest date in days in each
         month block.
         """
-        dates = pd.to_datetime(sales_df["date"])
-        month_lengths = dates.groupby(sales_df["month_block_num"]).agg(lambda s: s.max() - s.min())
-        sales_df["month_block_length"] = sales_df["month_block_num"].map(month_lengths)
+        month_dates = sales_df[["date", "month_block_num"]]
+        month_dates["date"] = pd.to_datetime(month_dates["date"])
+        def month_length_days(s):
+            return (s.max() - s.min()).days
+        month_dates = month_dates.groupby("month_block_num").agg(month_length_days)
+        sales_df["month_block_length"] = sales_df["month_block_num"].map(month_dates["date"])
         return sales_df
 
     def add_item_name_length(self, sales_df: pd.DataFrame) -> pd.DataFrame:
