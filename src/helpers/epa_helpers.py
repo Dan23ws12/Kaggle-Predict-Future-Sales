@@ -137,10 +137,10 @@ def get_charts_for_cat_vars(df:pd.DataFrame, colname:str):
     axes[0].set_title(f'Top 10 {label_name_dict[colname]} by Number of Sales (Pie Chart)', fontsize=14)
 
     # 2. Bar Chart - Top 10 by Count of Items Sold
-    top_10_by_sales = df[[colname,"item_cnt_month"]].groupby(colname).sum().sort_values("item_cnt_month",ascending=False).head(10).reset_index()
+    top_10_by_sales = df[[colname,"item_cnt_day"]].groupby(colname).sum().sort_values("item_cnt_day",ascending=False).head(10).reset_index()
     axes[1].bar(            
         [f'{label_name_dict[colname]} {c}' for c in top_10_by_sales[colname]],
-        top_10_by_sales["item_cnt_month"],
+        top_10_by_sales["item_cnt_day"],
         color='cornflowerblue',
         edgecolor='navy'
     )
