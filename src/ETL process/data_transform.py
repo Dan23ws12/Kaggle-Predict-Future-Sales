@@ -83,8 +83,6 @@ def get_item_cnt_month(df: pd.DataFrame)-> dict[str, pd.DataFrame]:
     item_cnt_month = df.groupby(["item_id", "shop_id", "month_block_num"])["item_cnt_day"].sum().reset_index()
     #renames the sum to item_cnt_month
     item_cnt_month.rename(columns={"item_cnt_day": "item_cnt_month"}, inplace=True)
-    # removes original column
-    df.drop(columns = ["item_cnt_day"], inplace=True)
     # merges with original database 
     df = df.merge(item_cnt_month, on=["item_id", "shop_id", "month_block_num"], how="left")
     return df
