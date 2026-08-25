@@ -3,7 +3,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder
 from . import CAT_FEATURES, NUMERIC_FEATURES, RAND_STATE, TARGET_COL
 
 class SalesDataPreprocessor:
@@ -36,15 +36,19 @@ class SalesDataPreprocessor:
         """
         return self.top_vals_by_col
         
-    def split_data(self, sales_df: pd.DataFrame):
+    def split_data(self, sales_df: pd.DataFrame, one_hot_encode: bool = True):
         """
         Splits the sales training data into training and test subsets, and returns 
         a tuple containing the training and test subsets data
         """
         scalable_numeric_features = [feature for feature in NUMERIC_FEATURES if feature != "month_block_num"]
-        col_transformer = ColumnTransformer([
-            ("numeric col z scaling", StandardScaler(), scalable_numeric_features),
-            ("one hot encoding", OneHotEncoder(), CAT_FEATURES)])
+        col_transformer = ColumnTransformer(
+            [("one hot encoding", OneHotEncoder(), CAT_FEATURES)]
+            if one_hot_encode else []
+        )
+        if not one_hot_encode:
+            for feature in CAT_FEATURES:
+                sales_df[feature] = pd.Categorical(sales_df[feature])
         train_df = sales_df.drop(columns=[TARGET_COL, "date"])
         train_df = self.downgrade_numeric(train_df)
         train_df = col_transformer.fit_transform(train_df)
@@ -178,10 +182,9 @@ class SalesDataPreprocessor:
 
     def add_features(self, sales_df: pd.DataFrame) -> pd.DataFrame:
         """
-        Returns a copy of the sales training dataframe with all engineered feature columns added.
+        Returns the sales training dataframe with all engineered feature columns added.
         """
-        new_df = sales_df.copy()
-        new_df = self.add_month_length(new_df)
+        new_df = self.add_month_length(sales_df)
         new_df = self.add_item_name_length(new_df)
         new_df = self.add_item_months_sold(new_df)
         new_df = self.add_avg_item_price_per_month(new_df)
