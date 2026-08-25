@@ -149,9 +149,10 @@ class SalesDataPreprocessor:
         Returns a copy of the sales training dataframe with an avg_item_price_per_month column
         added, representing the average item price for each item in each month block.
         """
-        sales_df["avg_item_price_per_month"] = (
+        avg_item_price_per_month = (
             sales_df.groupby(["item_id", "month_block_num"])["item_price"].transform("mean")
         )
+        sales_df["avg_item_price_per_month"] = sales_df[["item_id", "month_block_num"]].map(avg_item_price_per_month)
         return sales_df
 
     def add_avg_sales_per_shop(self, sales_df: pd.DataFrame) -> pd.DataFrame:
@@ -159,12 +160,11 @@ class SalesDataPreprocessor:
         Returns the sales training dataframe with an avg_sales_per_shop column
         added, representing the average number of sales per shop for each month block.
         """
-        sales_per_shop = (
+        avg_sales_per_shop = (
             sales_df.groupby(["month_block_num", "shop_id"])[TARGET_COL]
-            .sum()
+            .mean()
         )
-        avg_sales_per_shop = sales_per_shop.groupby("month_block_num").mean()
-        sales_df["avg_sales_per_shop"] = sales_df["month_block_num"].map(avg_sales_per_shop)
+        sales_df["avg_sales_per_shop"] = sales_df[["month_block_num", "shop_id"]].map(avg_sales_per_shop)
         return sales_df
 
     def add_avg_sales_per_item(self, sales_df: pd.DataFrame) -> pd.DataFrame:
@@ -172,12 +172,11 @@ class SalesDataPreprocessor:
         Returns the sales training dataframe with an avg_sales_per_item column
         added, representing the average number of sales per item for each month block.
         """
-        sales_per_item = (
+        avg_sales_per_item = (
             sales_df.groupby(["month_block_num", "item_id"])[TARGET_COL]
-            .sum()
+            .mean()
         )
-        avg_sales_per_item = sales_per_item.groupby("month_block_num").mean()
-        sales_df["avg_sales_per_item"] = sales_df["month_block_num"].map(avg_sales_per_item)
+        sales_df["avg_sales_per_item"] = sales_df[["month_block_num", "item_id"]].map(avg_sales_per_item)
         return sales_df
 
     def add_features(self, sales_df: pd.DataFrame) -> pd.DataFrame:
