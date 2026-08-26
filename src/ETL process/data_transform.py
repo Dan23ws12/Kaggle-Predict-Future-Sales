@@ -87,4 +87,18 @@ def get_item_cnt_month(df: pd.DataFrame)-> dict[str, pd.DataFrame]:
     df = df.merge(item_cnt_month, on=["item_id", "shop_id", "month_block_num"], how="left")
     return df
 
-    
+
+def get_item_price_agg(sales: pd.DataFrame) -> pd.DataFrame:
+    """
+    Returns a copy of the sales dataframe with item_price_mean and
+    item_price_median columns added. Both are aggregated by shop_id,
+    item_id and month_block_num. The original item_price column is unchanged.
+    """
+    sales_df = sales.copy()
+    grouped_price = sales_df.groupby(
+        ["shop_id", "item_id", "month_block_num"]
+    )["item_price"]
+    sales_df["item_price_mean"] = grouped_price.transform("mean")
+    sales_df["item_price_median"] = grouped_price.transform("median")
+    return sales_df
+
