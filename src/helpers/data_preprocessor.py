@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
-from . import CAT_FEATURES, NUMERIC_FEATURES, RAND_STATE, TARGET_COL
+from . import CAT_FEATURES, NUMERIC_FEATURES, NON_TRAINING_COLS, RAND_STATE, TARGET_COL
 
 class SalesDataPreprocessor:
     def __init__(self):
@@ -93,7 +93,8 @@ class SalesDataPreprocessor:
         Splits the sales training data into training and test subsets, and returns 
         a tuple containing the training and test subsets data
         """
-        scalable_numeric_features = [feature for feature in NUMERIC_FEATURES if feature != "month_block_num"]
+        # only one hot encode the categorical features if using a model that needs it
+        # aka random forest or decision tree
         col_transformer = ColumnTransformer(
             [("one hot encoding", OneHotEncoder(), CAT_FEATURES)]
             if one_hot_encode else []
@@ -101,8 +102,10 @@ class SalesDataPreprocessor:
         if not one_hot_encode:
             for feature in CAT_FEATURES:
                 sales_df[feature] = pd.Categorical(sales_df[feature])
-        train_df = sales_df.drop(columns=[TARGET_COL, "date"])
-        train_df = self.downgrade_numeric(train_df)
+        #drop daily item_price and item_cnt_day rows to reduce data size
+        sales_df.drop_duplicates(subset=(NUMERIC_FEATURES + CAT_FEATURES + TARGET_COL), inplace=True)
+        sales_df = self.downgrade_numeric(sales_df)
+        train_df = sales_df[NUMERIC_FEATURES + CAT_FEATURES]
         train_df = col_transformer.fit_transform(train_df)
         #Splitting data into train and test splits
         x_train, x_test, y_train, y_test = train_test_split(train_df, 
