@@ -10,7 +10,7 @@ NUMERIC_FEATURES:list[str] = [
     "month_block_num", "month_block_length", 
     "item_name_length", "item_months_sold", 
     "avg_item_price_per_month", "avg_sales_per_shop", 
-    "avg_sales_per_item", "item_price", "item_price_mean", "item_price_median"
+    "avg_sales_per_item", "item_price_mean", "item_price_median"
 ]
 # random state used for splitting the data into training and test sets and training the models
 RAND_STATE:int = 35
@@ -18,4 +18,9 @@ RAND_STATE:int = 35
 TARGET_COL:str = "item_cnt_month"
 
 
-__all__ = ['epa_helpers', "feature_eng_helpers", "CAT_FEATURES", "NUMERIC_COLS", "NUMERIC_FEATURES", "RAND_STATE", "TARGET_COL"]
+
+__all__ = [
+    'epa_helpers', "feature_eng_helpers", "CAT_FEATURES", "CAT_COLS", 
+    "NUMERIC_COLS", "NUMERIC_FEATURES", "RAND_STATE", "TARGET_COL", 
+    "NON_TRAINING_COLS"
+    ]
