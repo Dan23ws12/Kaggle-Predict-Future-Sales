@@ -121,12 +121,10 @@ class SalesDataPreprocessor:
         added, representing the difference between the latest and earliest date in days in each
         month block.
         """
-        month_dates = sales_df[["date", "month_block_num"]]
-        month_dates["date"] = pd.to_datetime(month_dates["date"])
-        def month_length_days(s):
-            return (s.max() - s.min()).days
-        month_dates = month_dates.groupby("month_block_num").agg(month_length_days)
-        sales_df["month_block_length"] = sales_df["month_block_num"].map(month_dates["date"])
+        dates = pd.to_datetime(sales_df["date"], cache=True)
+        month_span = dates.groupby(sales_df["month_block_num"], sort=False).agg(["min", "max"])
+        month_lengths = (month_span["max"] - month_span["min"]).dt.days
+        sales_df["month_block_length"] = sales_df["month_block_num"].map(month_lengths)
         return sales_df
 
     def add_item_name_length(self, sales_df: pd.DataFrame) -> pd.DataFrame:
@@ -138,18 +136,15 @@ class SalesDataPreprocessor:
         """
         if self._items_df is None:
             self._items_df = pd.read_csv(os.getenv("ORIGINAL_DATA_PATH") + "/items.csv")
+        # Count letters/digits only (same as str.isalnum); compute once per item, not per sales row.
+        item_ids = self._items_df["item_id"]
         name_lengths = (
-            self._items_df.set_index("item_id")["item_name"]
-            .map(lambda name: sum(1 for c in str(name) if c.isalnum()))
+            self._items_df["item_name"].astype(str).str.count(r"[^\W_]").to_numpy()
         )
-
-        def get_item_name_length(item_id) -> int:
-            if str(item_id) == "other":
-                return 5
-            lookup_id = int(item_id) if isinstance(item_id, str) and item_id.isdigit() else item_id
-            return name_lengths[lookup_id]
-
-        sales_df["item_name_length"] = sales_df["item_id"].apply(get_item_name_length)
+        lookup = dict(zip(item_ids.to_numpy(), name_lengths))
+        lookup.update(zip(item_ids.astype(str).to_numpy(), name_lengths))
+        lookup["other"] = 5
+        sales_df["item_name_length"] = sales_df["item_id"].map(lookup)
         return sales_df
 
     def add_item_months_sold(self, sales_df: pd.DataFrame) -> pd.DataFrame:
