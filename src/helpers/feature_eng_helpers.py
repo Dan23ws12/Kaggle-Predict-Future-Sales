@@ -94,21 +94,29 @@ def _hist_gradient_boosting_importances(model) -> np.ndarray:
                     importances[feature_idx] += gain
     total = importances.sum()
     if total > 0:
-        importances /= total
+        importances = (100 * importances) / total
     return importances
 
 
 def _model_feature_importances(model) -> np.ndarray:
+    is_lightgbm = type(model).__module__.startswith("lightgbm")
     if hasattr(model, "feature_importances_"):
-        return np.asarray(model.feature_importances_, dtype=np.float64)
-    if hasattr(model, "feature_importance") and callable(model.feature_importance):
-        return np.asarray(model.feature_importance(), dtype=np.float64)
-    if hasattr(model, "_predictors"):
+        importances = np.asarray(model.feature_importances_, dtype=np.float64)
+    elif hasattr(model, "feature_importance") and callable(model.feature_importance):
+        importances = np.asarray(model.feature_importance(), dtype=np.float64) * 100
+        is_lightgbm = True
+    elif hasattr(model, "_predictors"):
         return _hist_gradient_boosting_importances(model)
-    raise TypeError(
-        "Expected a fitted RandomForest, HistGradientBoosting, LightGBM, "
-        "or XGBoost regression model."
-    )
+    else:
+        raise TypeError(
+            "Expected a fitted RandomForest, HistGradientBoosting, LightGBM, "
+            "or XGBoost regression model."
+        )
+    if is_lightgbm:
+        total = importances.sum()
+        if total > 0:
+            importances = 100.0 * importances / total
+    return importances
 
 
 def get_feature_importance(model) -> pd.DataFrame:
