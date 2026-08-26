@@ -1,9 +1,10 @@
 import os
 import pandas as pd
+import numpy as np
 from dotenv import load_dotenv
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import  OrdinalEncoder
 from . import CAT_FEATURES, NUMERIC_FEATURES, RAND_STATE, TARGET_COL
 
 class SalesDataPreprocessor:
@@ -95,15 +96,17 @@ class SalesDataPreprocessor:
         """
         # only one hot encode the categorical features if using a model that needs it
         # aka random forest or decision tree
+        ordinal_encoder = OrdinalEncoder(
+            handle_unknown="use_encoded_value",
+            dtype=np.float32, unknown_value=-1, random_state=RAND_STATE
+        )
         col_transformer = ColumnTransformer(
-            [("one hot encoding", OneHotEncoder(), CAT_FEATURES)]
+            [("ordinal encoding", ordinal_encoder, CAT_FEATURES)]
             if one_hot_encode else []
         )
         if not one_hot_encode:
             for feature in CAT_FEATURES:
                 sales_df[feature] = pd.Categorical(sales_df[feature])
-        #drop daily item_price and item_cnt_day rows to reduce data size
-        sales_df.drop_duplicates(subset=(NUMERIC_FEATURES + CAT_FEATURES + TARGET_COL), inplace=True)
         sales_df = self.downgrade_numeric(sales_df)
         train_df = sales_df[NUMERIC_FEATURES + CAT_FEATURES]
         train_df = col_transformer.fit_transform(train_df)
