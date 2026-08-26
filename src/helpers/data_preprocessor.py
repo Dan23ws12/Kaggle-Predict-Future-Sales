@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
-from . import CAT_FEATURES, NUMERIC_FEATURES, NON_TRAINING_COLS, RAND_STATE, TARGET_COL
+from . import CAT_FEATURES, NUMERIC_FEATURES, RAND_STATE, TARGET_COL
 
 class SalesDataPreprocessor:
     def __init__(self):
