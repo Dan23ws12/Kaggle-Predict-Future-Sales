@@ -77,14 +77,11 @@ def get_train_data_template(sales: pd.DataFrame) -> pd.DataFrame:
 def get_item_cnt_month(df: pd.DataFrame)-> dict[str, pd.DataFrame]:
     """
     This function calculates total sales per month for each item and store
-    and returns a copy of the original dataframe with the total named item_cnt_month
+    and returns the given dataframe with the total named item_cnt_month
     """
-    # gets the total number of items sold per month and per store
-    item_cnt_month = df.groupby(["item_id", "shop_id", "month_block_num"])["item_cnt_day"].sum().reset_index()
-    #renames the sum to item_cnt_month
-    item_cnt_month.rename(columns={"item_cnt_day": "item_cnt_month"}, inplace=True)
-    # merges with original database 
-    df = df.merge(item_cnt_month, on=["item_id", "shop_id", "month_block_num"], how="left")
+    df["item_cnt_month"] = df.groupby(
+        ["item_id", "shop_id", "month_block_num"]
+    )["item_cnt_day"].transform("sum")
     return df
 
 
@@ -94,11 +91,10 @@ def get_item_price_agg(sales: pd.DataFrame) -> pd.DataFrame:
     item_price_median columns added. Both are aggregated by shop_id,
     item_id and month_block_num. The original item_price column is unchanged.
     """
-    sales_df = sales.copy()
-    grouped_price = sales_df.groupby(
+    grouped_price = sales.groupby(
         ["shop_id", "item_id", "month_block_num"]
     )["item_price"]
-    sales_df["item_price_mean"] = grouped_price.transform("mean")
-    sales_df["item_price_median"] = grouped_price.transform("median")
-    return sales_df
+    sales["item_price_mean"] = grouped_price.transform("mean")
+    sales["item_price_median"] = grouped_price.transform("median")
+    return sales
 
