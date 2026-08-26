@@ -2,7 +2,6 @@ import os
 import pandas as pd
 import numpy as np
 from dotenv import load_dotenv
-from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import  OrdinalEncoder
 from . import CAT_FEATURES, NUMERIC_FEATURES, RAND_STATE, TARGET_COL
@@ -94,25 +93,20 @@ class SalesDataPreprocessor:
         Splits the sales training data into training and test subsets, and returns 
         a tuple containing the training and test subsets data
         """
-        # only one hot encode the categorical features if using a model that needs it
+        # only ordinal-encode the categorical features if using a model that needs it
         # aka random forest or decision tree
-        ordinal_encoder = OrdinalEncoder(
-            handle_unknown="use_encoded_value",
-            dtype=np.float32, unknown_value=-1, random_state=RAND_STATE
-        )
-        col_transformer = ColumnTransformer(
-            [("ordinal encoding", ordinal_encoder, CAT_FEATURES)]
-            if one_hot_encode else []
-        )
-        if not one_hot_encode:
-            for feature in CAT_FEATURES:
-                sales_df[feature] = pd.Categorical(sales_df[feature])
         sales_df = self.downgrade_numeric(sales_df)
         train_df = sales_df[NUMERIC_FEATURES + CAT_FEATURES]
-        train_df = col_transformer.fit_transform(train_df)
-        #Splitting data into train and test splits
         x_train, x_test, y_train, y_test = train_test_split(train_df, 
                 sales_df[TARGET_COL], test_size=0.3, random_state=RAND_STATE)
+        if one_hot_encode:
+            ordinal_encoder = OrdinalEncoder(handle_unknown="use_encoded_value", dtype=np.float32, unknown_value=-1)
+            x_train[CAT_FEATURES] = ordinal_encoder.fit_transform(x_train[CAT_FEATURES])
+            x_test[CAT_FEATURES] = ordinal_encoder.transform(x_test[CAT_FEATURES])
+        else:
+            for feature in CAT_FEATURES:
+                x_train[feature] = pd.Categorical(x_train[feature])
+                x_test[feature] = pd.Categorical(x_test[feature])
         return x_train, x_test, y_train, y_test
 
     def add_month_length(self, sales_df: pd.DataFrame) -> pd.DataFrame:
