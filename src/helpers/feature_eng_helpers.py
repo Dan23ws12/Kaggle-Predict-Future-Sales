@@ -13,6 +13,7 @@ def preprocess_and_split_data(data: pd.DataFrame, should_one_hot_encode: bool = 
     splitting the data into training and test subsets.
     Returns a tuple containing the training and test subsets data
     """
+    data.drop(columns=["item_price_mean"], inplace=True)
     data = data_preprocessor.replace_infrequent_values(data)
     data = data_preprocessor.add_features(data)
     keys = ["shop_id", "item_id", "month_block_num"]
@@ -25,8 +26,7 @@ def preprocess_and_split_data(data: pd.DataFrame, should_one_hot_encode: bool = 
         "item_months_sold": "first",
         "avg_item_price_per_month": "first",
         "avg_sales_per_shop": "first",
-        "avg_sales_per_item": "first",
-        "item_price_mean": "mean", 
+        "avg_sales_per_item": "first", 
         "item_price_median": "median",
     })
     return data_preprocessor.split_data(data_grouped, should_one_hot_encode)
@@ -44,7 +44,7 @@ def get_preprocessed_data(data: pd.DataFrame) -> pd.DataFrame:
     adding features.
     Returns the preprocessed data.
     """
-    
+    data.drop(columns=["item_price_mean"], inplace=True)
     new_data = data_preprocessor.replace_infrequent_values(data)
     new_data = data_preprocessor.add_features(new_data)
     keys = ["shop_id", "item_id", "month_block_num"]
@@ -58,7 +58,6 @@ def get_preprocessed_data(data: pd.DataFrame) -> pd.DataFrame:
         "avg_item_price_per_month": "first",
         "avg_sales_per_shop": "first",
         "avg_sales_per_item": "first",
-        "item_price_mean": "mean", 
         "item_price_median": "median",
     })
     return data_grouped
