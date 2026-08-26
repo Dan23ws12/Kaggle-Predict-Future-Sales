@@ -53,7 +53,7 @@ def get_sales_train_data(sales:pd.DataFrame, fill_method="zero"):
         sales_train_df["item_cnt_day"]= sales_train_df["item_cnt_day"].ffill()
     else:
         raise ValueError(f"fill_method {fill_method} not found")
-    return get_item_cnt_month(sales_train_df)
+    return get_item_price_agg(get_item_cnt_month(sales_train_df))
 
     
 
