@@ -25,8 +25,6 @@ def preprocess_and_split_data(data: pd.DataFrame, should_one_hot_encode: bool = 
         "item_name_length": "first",
         "item_months_sold": "first",
         "avg_item_price_per_month": "first",
-        "avg_sales_per_shop": "first",
-        "avg_sales_per_item": "first", 
         "item_price_median": "median",
     })
     return data_preprocessor.split_data(data_grouped, should_one_hot_encode)
@@ -56,8 +54,6 @@ def get_preprocessed_data(data: pd.DataFrame) -> pd.DataFrame:
         "item_name_length": "first",
         "item_months_sold": "first",
         "avg_item_price_per_month": "first",
-        "avg_sales_per_shop": "first",
-        "avg_sales_per_item": "first",
         "item_price_median": "median",
     })
     return data_grouped

@@ -9,8 +9,7 @@ NUMERIC_COLS:list[str] = ["item_price", "item_cnt_month", "item_cnt_day",
 NUMERIC_FEATURES:list[str] = [
     "month_block_num", "month_block_length", 
     "item_name_length", "item_months_sold", 
-    "avg_item_price_per_month", "avg_sales_per_shop", 
-    "avg_sales_per_item", "item_price_median"
+    "avg_item_price_per_month", "item_price_median"
 ]
 # random state used for splitting the data into training and test sets and training the models
 RAND_STATE:int = 35

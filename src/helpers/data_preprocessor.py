@@ -191,8 +191,6 @@ class SalesDataPreprocessor:
         new_df = self.add_item_name_length(new_df)
         new_df = self.add_item_months_sold(new_df)
         new_df = self.add_avg_item_price_per_month(new_df)
-        new_df = self.add_avg_sales_per_shop(new_df)
-        new_df = self.add_avg_sales_per_item(new_df)
         return new_df
 
     def downgrade_numeric(self, df: pd.DataFrame) -> pd.DataFrame:
