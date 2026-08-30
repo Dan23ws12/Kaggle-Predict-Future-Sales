@@ -31,11 +31,12 @@ def get_full_sales_data(sales: pd.DataFrame, items: pd.DataFrame) -> pd.DataFram
     return sales_df
     
 
-def get_sales_train_data(sales:pd.DataFrame, fill_method="zero"):
+def get_filled_sales_data(sales:pd.DataFrame, fill_method="zero"):
     """
-    Returns a copy of the sales dataframe for training with negative values in 
-    item_cnt_day replaced by the desired fill_method
-    and item_cnt_day is then replaced with item_cnt_month
+    Returns the sales dataframe aggregated to one row per shop, item, and
+    month. Negative values in item_cnt_day are replaced by fill_method first.
+    item_cnt_month is the sum of item_cnt_day; item_price_median is the
+    median item_price. Daily item_cnt_day and item_price columns are dropped.
     """
     sales_train_df = sales.copy(deep=False)
     if fill_method == "zero":
@@ -53,11 +54,10 @@ def get_sales_train_data(sales:pd.DataFrame, fill_method="zero"):
         sales_train_df["item_cnt_day"]= sales_train_df["item_cnt_day"].ffill()
     else:
         raise ValueError(f"fill_method {fill_method} not found")
-    return get_item_price_agg(get_item_cnt_month(sales_train_df))
-
+    return sales_train_df
     
 
-def get_train_data_template(sales: pd.DataFrame) -> pd.DataFrame:
+def get_clean_data_template(sales: pd.DataFrame) -> pd.DataFrame:
     """
     Returns a copy of the sales dataframe with the date column removed, 
     date_block_num renamed to month_block_num and item_price 
@@ -68,7 +68,7 @@ def get_train_data_template(sales: pd.DataFrame) -> pd.DataFrame:
     # removing duplicate rows (no duplicate rows in other tables)
     sales_train_df = sales.drop_duplicates()
     sales_train_df.rename(columns={"date_block_num": "month_block_num"}, inplace=True)
-    sales_train_df["date"] = pd.to_datetime(sales_train_df["date"], format="%d.%m.%Y")
+    sales_train_df.drop(columns=["date"], inplace=True)
     # replacing the item_price with the absolute value
     sales_train_df["item_price"] = sales_train_df["item_price"].map(lambda x: abs(x))
     return sales_train_df
