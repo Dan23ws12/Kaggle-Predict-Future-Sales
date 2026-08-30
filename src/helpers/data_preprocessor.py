@@ -132,12 +132,18 @@ class SalesDataPreprocessor:
     def add_num_months_sold_prior(self, sales_df: pd.DataFrame) -> pd.DataFrame:
         """
         Returns the sales training dataframe with a num_months_sold_prior column
-        added, representing the number of distinct months during which each item was sold.
+        added, representing how many distinct months the item was sold in before
+        the current month_block_num. Month 0 is always 0.
         """
-        
-        months_sold = sales_df.groupby("item_id")["month_block_num"].nunique()
-        sales_df["num_months_sold_prior"] = sales_df["item_id"].map(months_sold)
-        return sales_df
+        item_months = (
+            sales_df[["item_id", "month_block_num"]]
+            .drop_duplicates()
+            .sort_values(["item_id", "month_block_num"], kind="mergesort")
+        )
+        item_months["num_months_sold_prior"] = item_months.groupby("item_id").cumcount()
+        return sales_df.merge(
+            item_months, on=["item_id", "month_block_num"], how="left"
+        )
 
     def add_avg_item_price_per_month(self, sales_df: pd.DataFrame) -> pd.DataFrame:
         """

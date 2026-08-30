@@ -104,17 +104,17 @@ class TestAddItemNameLength:
 class TestAddNumMonthsSoldPrior:
     """Tests for add_num_months_sold_prior."""
 
-    def test_counts_distinct_months_each_item_appears_in(self, preprocessor):
-        """num_months_sold_prior is how many different month blocks an item appears in.
+    def test_counts_prior_months_each_item_was_sold_in(self, preprocessor):
+        """num_months_sold_prior is how many earlier months the item was sold in.
 
-        Item 10 is sold in months 0, 1, and 2, so every item-10 row gets 3.
-        Item 20 is sold in months 1 and 2, so those rows get 2.
+        Item 10 is sold in months 0, 1, and 2: month 0 is 0, month 1 is 1,
+        month 2 is 2. Item 20 is sold in months 1 and 2: month 1 is 0, month 2 is 1.
         """
         df = make_aggregation_df()
         result = preprocessor.add_num_months_sold_prior(df.copy())
 
         assert_original_columns_unchanged(result, df)
-        assert list(result["num_months_sold_prior"]) == [3, 3, 2, 3, 2]
+        assert list(result["num_months_sold_prior"]) == [0, 1, 0, 2, 1]
 
 
 class TestAddAvgItemPricePerMonth:
