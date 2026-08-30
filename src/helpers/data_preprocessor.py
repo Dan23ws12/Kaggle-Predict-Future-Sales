@@ -109,18 +109,6 @@ class SalesDataPreprocessor:
                 x_test[feature] = pd.Categorical(x_test[feature])
         return x_train, x_test, y_train, y_test
 
-    def add_month_length(self, sales_df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Returns the sales training dataframe with a month_block_length column
-        added, representing the difference between the latest and earliest date in days in each
-        month block.
-        """
-        dates = pd.to_datetime(sales_df["date"], cache=True)
-        month_span = dates.groupby(sales_df["month_block_num"], sort=False).agg(["min", "max"])
-        month_lengths = (month_span["max"] - month_span["min"]).dt.days
-        sales_df["month_block_length"] = sales_df["month_block_num"].map(month_lengths)
-        return sales_df
-
     def add_item_name_length(self, sales_df: pd.DataFrame) -> pd.DataFrame:
         """
         Returns the sales training dataframe with an item_name_length column
@@ -141,56 +129,83 @@ class SalesDataPreprocessor:
         sales_df["item_name_length"] = sales_df["item_id"].map(lookup)
         return sales_df
 
-    def add_item_months_sold(self, sales_df: pd.DataFrame) -> pd.DataFrame:
+    def add_num_months_sold_prior(self, sales_df: pd.DataFrame) -> pd.DataFrame:
         """
-        Returns the sales training dataframe with an item_months_sold column
+        Returns the sales training dataframe with a num_months_sold_prior column
         added, representing the number of distinct months during which each item was sold.
         """
         
         months_sold = sales_df.groupby("item_id")["month_block_num"].nunique()
-        sales_df["item_months_sold"] = sales_df["item_id"].map(months_sold)
+        sales_df["num_months_sold_prior"] = sales_df["item_id"].map(months_sold)
         return sales_df
 
     def add_avg_item_price_per_month(self, sales_df: pd.DataFrame) -> pd.DataFrame:
         """
         Returns a copy of the sales training dataframe with an avg_item_price_per_month column
-        added, representing the average item price for each item in each month block.
+        added, representing the average item_price_median for each item in each month block.
         """
         sales_df["avg_item_price_per_month"] = (
-            sales_df.groupby(["item_id", "month_block_num"])["item_price"].transform("mean")
+            sales_df.groupby(["item_id", "month_block_num"])["item_price_median"].transform("mean")
         )
         return sales_df
+
+    def add_avg_shop_price_per_month(self, sales_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Returns a copy of the sales training dataframe with an avg_shop_price_per_month column
+        added, representing the average item_price_median for each shop in each month block.
+        """
+        sales_df["avg_shop_price_per_month"] = (
+            sales_df.groupby(["shop_id", "month_block_num"])["item_price_median"].transform("mean")
+        )
+        return sales_df
+
+    def _rolling_prior_month_sales(
+        self, sales_df: pd.DataFrame, group_col: str, result_col: str
+    ) -> pd.DataFrame:
+        """
+        Adds result_col as the expanding mean of prior months' item_cnt_month
+        totals for each value of group_col. The current month is excluded.
+        Months with no prior history are NaN.
+        """
+        monthly = (
+            sales_df.groupby([group_col, "month_block_num"], as_index=False)["item_cnt_month"]
+            .sum()
+            .sort_values([group_col, "month_block_num"], kind="mergesort")
+        )
+        monthly[result_col] = (
+            monthly.groupby(group_col, sort=False)["item_cnt_month"]
+            .transform(lambda s: s.shift(1).expanding().mean())
+        )
+        return sales_df.merge(
+            monthly[[group_col, "month_block_num", result_col]],
+            on=[group_col, "month_block_num"],
+            how="left",
+        )
 
     def add_avg_sales_per_shop(self, sales_df: pd.DataFrame) -> pd.DataFrame:
         """
         Returns the sales training dataframe with an avg_sales_per_shop column
-        added, representing the average number of sales per shop for each month block.
+        added, representing the rolling average of that shop's prior months' sales totals.
         """
-        sales_df["avg_sales_per_shop"] = (
-            sales_df.groupby(["month_block_num", "shop_id"])["item_cnt_day"]
-            .transform("mean")
-        )
-        return sales_df
+        return self._rolling_prior_month_sales(sales_df, "shop_id", "avg_sales_per_shop")
 
     def add_avg_sales_per_item(self, sales_df: pd.DataFrame) -> pd.DataFrame:
         """
         Returns the sales training dataframe with an avg_sales_per_item column
-        added, representing the average number of sales per item for each month block.
+        added, representing the rolling average of that item's prior months' sales totals.
         """
-        sales_df["avg_sales_per_item"] = (
-            sales_df.groupby(["month_block_num", "item_id"])["item_cnt_day"]
-            .transform("mean")
-        )
-        return sales_df
+        return self._rolling_prior_month_sales(sales_df, "item_id", "avg_sales_per_item")
 
     def add_features(self, sales_df: pd.DataFrame) -> pd.DataFrame:
         """
         Returns the sales training dataframe with all engineered feature columns added.
         """
-        new_df = self.add_month_length(sales_df)
-        new_df = self.add_item_name_length(new_df)
-        new_df = self.add_item_months_sold(new_df)
+        new_df = self.add_item_name_length(sales_df)
+        new_df = self.add_num_months_sold_prior(new_df)
+        new_df = self.add_avg_shop_price_per_month(new_df)
         new_df = self.add_avg_item_price_per_month(new_df)
+        new_df = self.add_avg_sales_per_shop(new_df)
+        new_df = self.add_avg_sales_per_item(new_df)
         return new_df
 
     def downgrade_numeric(self, df: pd.DataFrame) -> pd.DataFrame:
