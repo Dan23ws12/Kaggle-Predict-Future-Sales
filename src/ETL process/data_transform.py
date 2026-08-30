@@ -72,29 +72,3 @@ def get_clean_data_template(sales: pd.DataFrame) -> pd.DataFrame:
     # replacing the item_price with the absolute value
     sales_train_df["item_price"] = sales_train_df["item_price"].map(lambda x: abs(x))
     return sales_train_df
-    
-
-def get_item_cnt_month(df: pd.DataFrame)-> dict[str, pd.DataFrame]:
-    """
-    This function calculates total sales per month for each item and store
-    and returns the given dataframe with the total named item_cnt_month
-    """
-    df["item_cnt_month"] = df.groupby(
-        ["item_id", "shop_id", "month_block_num"]
-    )["item_cnt_day"].transform("sum")
-    return df
-
-
-def get_item_price_agg(sales: pd.DataFrame) -> pd.DataFrame:
-    """
-    Returns a copy of the sales dataframe with item_price_mean and
-    item_price_median columns added. Both are aggregated by shop_id,
-    item_id and month_block_num. The original item_price column is unchanged.
-    """
-    grouped_price = sales.groupby(
-        ["shop_id", "item_id", "month_block_num"]
-    )["item_price"]
-    sales["item_price_mean"] = grouped_price.transform("mean")
-    sales["item_price_median"] = grouped_price.transform("median")
-    return sales
-
