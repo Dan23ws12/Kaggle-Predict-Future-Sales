@@ -8,7 +8,7 @@ NUMERIC_COLS:list[str] = ["item_price", "item_cnt_month", "item_cnt_day",
 # numeric columns used (for model training purposes)
 NUMERIC_FEATURES:list[str] = [
     "month_block_num", "avg_sales_per_shop", "avg_sales_per_item",
-    "item_name_length", "item_months_sold", 
+    "item_name_length", "num_months_sold_prior", 
     "avg_item_price_per_month", "avg_shop_price_per_month", "item_price_median"
 ]
 # random state used for splitting the data into training and test sets and training the models
