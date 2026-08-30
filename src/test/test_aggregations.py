@@ -155,15 +155,15 @@ class TestAddAvgSalesPerShop:
     def test_rolling_average_of_prior_months_shop_sales(self, preprocessor):
         """avg_sales_per_shop is the expanding mean of that shop's prior monthly sales totals.
 
-        Shop 1 month 0 has no history (NaN). Shop 1 month 1 uses month 0 total 4.
+        Shop 1 month 0 has no history (0). Shop 1 month 1 uses month 0 total 4.
         Shop 1 month 2 averages month 0 (4) and month 1 (2) = 3.
-        Shop 2 first appears in month 1, so that month is NaN; month 2 uses 10.
+        Shop 2 first appears in month 1, so that month is 0; month 2 uses 10.
         """
         df = make_aggregation_df()
         result = preprocessor.add_avg_sales_per_shop(df.copy())
 
         assert_original_columns_unchanged(result, df)
-        expected = [float("nan"), 4.0, float("nan"), 3.0, 10.0]
+        expected = [0.0, 4.0, 0.0, 3.0, 10.0]
         pd.testing.assert_series_equal(
             result["avg_sales_per_shop"].reset_index(drop=True),
             pd.Series(expected, name="avg_sales_per_shop"),
@@ -177,15 +177,15 @@ class TestAddAvgSalesPerItem:
     def test_rolling_average_of_prior_months_item_sales(self, preprocessor):
         """avg_sales_per_item is the expanding mean of that item's prior monthly sales totals.
 
-        Item 10 month 0 has no history (NaN). Item 10 month 1 uses month 0 total 4.
+        Item 10 month 0 has no history (0). Item 10 month 1 uses month 0 total 4.
         Item 10 month 2 averages month 0 (4) and month 1 (2) = 3.
-        Item 20 first appears in month 1, so that month is NaN; month 2 uses 10.
+        Item 20 first appears in month 1, so that month is 0; month 2 uses 10.
         """
         df = make_aggregation_df()
         result = preprocessor.add_avg_sales_per_item(df.copy())
 
         assert_original_columns_unchanged(result, df)
-        expected = [float("nan"), 4.0, float("nan"), 3.0, 10.0]
+        expected = [0.0, 4.0, 0.0, 3.0, 10.0]
         pd.testing.assert_series_equal(
             result["avg_sales_per_item"].reset_index(drop=True),
             pd.Series(expected, name="avg_sales_per_item"),

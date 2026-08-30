@@ -165,7 +165,7 @@ class SalesDataPreprocessor:
         """
         Adds result_col as the expanding mean of prior months' item_cnt_month
         totals for each value of group_col. The current month is excluded.
-        Months with no prior history are NaN.
+        Months with no prior history are filled with 0.
         """
         monthly = (
             sales_df.groupby([group_col, "month_block_num"], as_index=False)["item_cnt_month"]
@@ -175,6 +175,7 @@ class SalesDataPreprocessor:
         monthly[result_col] = (
             monthly.groupby(group_col, sort=False)["item_cnt_month"]
             .transform(lambda s: s.shift(1).expanding().mean())
+            .fillna(0)
         )
         return sales_df.merge(
             monthly[[group_col, "month_block_num", result_col]],
