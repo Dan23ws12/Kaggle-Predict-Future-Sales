@@ -6,34 +6,31 @@ the new column matches the intended aggregation.
 
 import pandas as pd
 
+# Columns match data/clean data/sales_train_cnt_0.csv
 ORIGINAL_COLUMNS = [
-    "date",
-    "month_block_num",
     "shop_id",
     "item_id",
-    "item_price",
-    "item_cnt_day",
+    "month_block_num",
     "item_cnt_month",
+    "item_price_median",
 ]
 
 
 def make_aggregation_df() -> pd.DataFrame:
-    """Build a small sales table with known dates, prices, and daily counts."""
+    """Build a small sales table in the sales_train_cnt_0.csv format.
+
+    item_price_median is the median of the conceptual daily item_price
+    values in that month block:
+    month 0 prices [100, 200] -> 150; month 1 prices [150, 50, 70] -> 150;
+    month 2 prices [80, 120] -> 100.
+    """
     return pd.DataFrame(
         {
-            "date": [
-                "2013-01-02",
-                "2013-01-10",
-                "2013-02-01",
-                "2013-02-05",
-                "2013-02-05",
-            ],
-            "month_block_num": [0, 0, 1, 1, 1],
-            "shop_id": [1, 1, 1, 2, 2],
-            "item_id": [10, 10, 10, 20, 20],
-            "item_price": [100.0, 200.0, 150.0, 50.0, 70.0],
-            "item_cnt_day": [1.0, 3.0, 2.0, 4.0, 6.0],
-            "item_cnt_month": [4.0, 4.0, 2.0, 10.0, 10.0],
+            "shop_id": [1, 1, 2, 1, 2],
+            "item_id": [10, 10, 20, 10, 20],
+            "month_block_num": [0, 1, 1, 2, 2],
+            "item_cnt_month": [4.0, 2.0, 10.0, 8.0, 1.0],
+            "item_price_median": [150.0, 150.0, 150.0, 100.0, 100.0],
         }
     )
 
@@ -45,43 +42,6 @@ def assert_original_columns_unchanged(result: pd.DataFrame, original: pd.DataFra
         original[ORIGINAL_COLUMNS].reset_index(drop=True),
         check_dtype=False,
     )
-
-
-class TestAddMonthLength:
-    """Tests for add_month_length."""
-
-    def test_adds_day_span_between_earliest_and_latest_date_per_month(
-        self, preprocessor
-    ):
-        """month_block_length is the number of days from first to last date in each month.
-
-        Month 0 runs from 2013-01-02 to 2013-01-10 (8 days). Month 1 runs
-        from 2013-02-01 to 2013-02-05 (4 days). Every row in a month gets
-        that month's length.
-        """
-        df = make_aggregation_df()
-        result = preprocessor.add_month_length(df.copy())
-
-        assert_original_columns_unchanged(result, df)
-        assert list(result["month_block_length"]) == [8, 8, 4, 4, 4]
-
-    def test_single_date_in_a_month_has_length_zero(self, preprocessor):
-        """A month with only one date has a length of 0 days."""
-        df = pd.DataFrame(
-            {
-                "date": ["2013-03-15", "2013-03-15"],
-                "month_block_num": [2, 2],
-                "shop_id": [1, 2],
-                "item_id": [10, 20],
-                "item_price": [1.0, 2.0],
-                "item_cnt_day": [1.0, 1.0],
-                "item_cnt_month": [1.0, 1.0],
-            }
-        )
-
-        result = preprocessor.add_month_length(df.copy())
-
-        assert list(result["month_block_length"]) == [0, 0]
 
 
 class TestAddItemNameLength:
@@ -103,13 +63,11 @@ class TestAddItemNameLength:
         )
         df = pd.DataFrame(
             {
-                "date": ["2013-01-02", "2013-01-03", "2013-01-04"],
-                "month_block_num": [0, 0, 0],
                 "shop_id": [1, 1, 1],
                 "item_id": [10, 20, "other"],
-                "item_price": [1.0, 2.0, 3.0],
-                "item_cnt_day": [1.0, 1.0, 1.0],
+                "month_block_num": [0, 0, 0],
                 "item_cnt_month": [1.0, 1.0, 1.0],
+                "item_price_median": [1.0, 2.0, 3.0],
             }
         )
         original = df.copy()
@@ -130,13 +88,11 @@ class TestAddItemNameLength:
         )
         df = pd.DataFrame(
             {
-                "date": ["2013-01-02"],
-                "month_block_num": [0],
                 "shop_id": [1],
                 "item_id": ["10"],
-                "item_price": [1.0],
-                "item_cnt_day": [1.0],
+                "month_block_num": [0],
                 "item_cnt_month": [1.0],
+                "item_price_median": [1.0],
             }
         )
 
@@ -145,65 +101,93 @@ class TestAddItemNameLength:
         assert list(result["item_name_length"]) == [3]
 
 
-class TestAddItemMonthsSold:
-    """Tests for add_item_months_sold."""
+class TestAddNumMonthsSoldPrior:
+    """Tests for add_num_months_sold_prior."""
 
     def test_counts_distinct_months_each_item_appears_in(self, preprocessor):
-        """item_months_sold is how many different month blocks an item appears in.
+        """num_months_sold_prior is how many different month blocks an item appears in.
 
-        Item 10 is sold in months 0 and 1, so every item-10 row gets 2.
-        Item 20 is sold only in month 1, so those rows get 1.
+        Item 10 is sold in months 0, 1, and 2, so every item-10 row gets 3.
+        Item 20 is sold in months 1 and 2, so those rows get 2.
         """
         df = make_aggregation_df()
-        result = preprocessor.add_item_months_sold(df.copy())
+        result = preprocessor.add_num_months_sold_prior(df.copy())
 
         assert_original_columns_unchanged(result, df)
-        assert list(result["item_months_sold"]) == [2, 2, 2, 1, 1]
+        assert list(result["num_months_sold_prior"]) == [3, 3, 2, 3, 2]
 
 
 class TestAddAvgItemPricePerMonth:
     """Tests for add_avg_item_price_per_month."""
 
-    def test_averages_item_price_for_each_item_in_each_month(self, preprocessor):
-        """avg_item_price_per_month is the mean price of that item in that month.
+    def test_averages_item_price_median_for_each_item_in_each_month(self, preprocessor):
+        """avg_item_price_per_month is the mean item_price_median of that item in that month.
 
-        Item 10 in month 0: (100 + 200) / 2 = 150. Item 10 in month 1: 150.
-        Item 20 in month 1: (50 + 70) / 2 = 60.
+        item_price_median is already the month-block median, so every row
+        in month 0 or 1 is 150 and every row in month 2 is 100.
         """
         df = make_aggregation_df()
         result = preprocessor.add_avg_item_price_per_month(df.copy())
 
         assert_original_columns_unchanged(result, df)
-        assert list(result["avg_item_price_per_month"]) == [150.0, 150.0, 150.0, 60.0, 60.0]
+        assert list(result["avg_item_price_per_month"]) == [150.0, 150.0, 150.0, 100.0, 100.0]
+
+
+class TestAddAvgShopPricePerMonth:
+    """Tests for add_avg_shop_price_per_month."""
+
+    def test_averages_item_price_median_for_each_shop_in_each_month(self, preprocessor):
+        """avg_shop_price_per_month is the mean item_price_median of that shop in that month.
+
+        item_price_median is already the month-block median, so every row
+        in month 0 or 1 is 150 and every row in month 2 is 100.
+        """
+        df = make_aggregation_df()
+        result = preprocessor.add_avg_shop_price_per_month(df.copy())
+
+        assert_original_columns_unchanged(result, df)
+        assert list(result["avg_shop_price_per_month"]) == [150.0, 150.0, 150.0, 100.0, 100.0]
 
 
 class TestAddAvgSalesPerShop:
     """Tests for add_avg_sales_per_shop."""
 
-    def test_averages_daily_sales_for_each_shop_in_each_month(self, preprocessor):
-        """avg_sales_per_shop is the mean item_cnt_day for that shop in that month.
+    def test_rolling_average_of_prior_months_shop_sales(self, preprocessor):
+        """avg_sales_per_shop is the expanding mean of that shop's prior monthly sales totals.
 
-        Shop 1 in month 0: (1 + 3) / 2 = 2. Shop 1 in month 1: 2.
-        Shop 2 in month 1: (4 + 6) / 2 = 5.
+        Shop 1 month 0 has no history (NaN). Shop 1 month 1 uses month 0 total 4.
+        Shop 1 month 2 averages month 0 (4) and month 1 (2) = 3.
+        Shop 2 first appears in month 1, so that month is NaN; month 2 uses 10.
         """
         df = make_aggregation_df()
         result = preprocessor.add_avg_sales_per_shop(df.copy())
 
         assert_original_columns_unchanged(result, df)
-        assert list(result["avg_sales_per_shop"]) == [2.0, 2.0, 2.0, 5.0, 5.0]
+        expected = [float("nan"), 4.0, float("nan"), 3.0, 10.0]
+        pd.testing.assert_series_equal(
+            result["avg_sales_per_shop"].reset_index(drop=True),
+            pd.Series(expected, name="avg_sales_per_shop"),
+            check_dtype=False,
+        )
 
 
 class TestAddAvgSalesPerItem:
     """Tests for add_avg_sales_per_item."""
 
-    def test_averages_daily_sales_for_each_item_in_each_month(self, preprocessor):
-        """avg_sales_per_item is the mean item_cnt_day for that item in that month.
+    def test_rolling_average_of_prior_months_item_sales(self, preprocessor):
+        """avg_sales_per_item is the expanding mean of that item's prior monthly sales totals.
 
-        Item 10 in month 0: (1 + 3) / 2 = 2. Item 10 in month 1: 2.
-        Item 20 in month 1: (4 + 6) / 2 = 5.
+        Item 10 month 0 has no history (NaN). Item 10 month 1 uses month 0 total 4.
+        Item 10 month 2 averages month 0 (4) and month 1 (2) = 3.
+        Item 20 first appears in month 1, so that month is NaN; month 2 uses 10.
         """
         df = make_aggregation_df()
         result = preprocessor.add_avg_sales_per_item(df.copy())
 
         assert_original_columns_unchanged(result, df)
-        assert list(result["avg_sales_per_item"]) == [2.0, 2.0, 2.0, 5.0, 5.0]
+        expected = [float("nan"), 4.0, float("nan"), 3.0, 10.0]
+        pd.testing.assert_series_equal(
+            result["avg_sales_per_item"].reset_index(drop=True),
+            pd.Series(expected, name="avg_sales_per_item"),
+            check_dtype=False,
+        )
