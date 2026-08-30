@@ -31,7 +31,18 @@ def get_preprocessed_data(data: pd.DataFrame) -> pd.DataFrame:
     """
     new_data = data_preprocessor.replace_infrequent_values(data)
     new_data = data_preprocessor.add_features(new_data)
-    return new_data
+    keys = ["item_id", "shop_id", "month_block_num"]
+    data_grouped = new_data.groupby(keys, as_index=False).agg({
+        "item_name_length": "first",
+        "num_months_sold_prior": "first",
+        "avg_sales_per_shop": "first",
+        "avg_sales_per_item": "first",
+        "avg_item_price_per_month": "first",
+        "avg_shop_price_per_month": "first",
+        "item_price_median": "median",
+        TARGET_COL: "sum",
+    })
+    return data_grouped
 
 def _model_feature_names(model, n_features: int) -> list[str]:
     """Return feature names stored on a fitted model, or generic fallback names."""
