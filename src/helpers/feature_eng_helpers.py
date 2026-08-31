@@ -44,6 +44,43 @@ def get_preprocessed_data(data: pd.DataFrame) -> pd.DataFrame:
     })
     return data_grouped
 
+def add_features_to_sub_df(
+    sub_df: pd.DataFrame, processed_train: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Prepares a submission-style frame (same columns as train_sub) using
+    processed_train: rare shop_id/item_id values become "other", then
+    item_cnt_month and item_price_median are taken from the prior month
+    in processed_train. Unmatched item_cnt_month values are filled with 0.
+    """
+    sub_df = sub_df.copy()
+    for col in ["shop_id", "item_id"]:
+        sub_df[col] = sub_df[col].astype(str)
+        sub_df = data_preprocessor.replace_vals_by_col(
+            sub_df, col, processed_train[col]
+        )
+
+    prior_month_num = int(sub_df["month_block_num"].max()) - 1
+    prior_month_sales = processed_train.loc[
+        processed_train["month_block_num"] == prior_month_num,
+        ["shop_id", "item_id", "item_cnt_month", "item_price_median"],
+    ].copy()
+    for col in ("shop_id", "item_id"):
+        prior_month_sales[col] = prior_month_sales[col].astype(str)
+        sub_df[col] = sub_df[col].astype(str)
+
+    overlap = [c for c in ("item_cnt_month", "item_price_median") if c in sub_df.columns]
+    if overlap:
+        sub_df = sub_df.drop(columns=overlap)
+
+    sub_df = sub_df.merge(
+        prior_month_sales,
+        on=["shop_id", "item_id"],
+        how="left",
+    )
+    sub_df["item_cnt_month"] = sub_df["item_cnt_month"].fillna(0)
+    return sub_df
+
 def _model_feature_names(model, n_features: int) -> list[str]:
     """Return feature names stored on a fitted model, or generic fallback names."""
     if getattr(model, "feature_names_in_", None) is not None:
