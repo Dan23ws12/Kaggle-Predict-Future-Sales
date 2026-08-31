@@ -38,5 +38,6 @@ sytem or into a python virtual environment
 Some ideas for features such as length of item name were obtained from the Kaggle discussion 
 linked here: https://www.kaggle.com/code/abubakar624/first-place-solution-kaggle-predict-future-sales#Feature-engineering
 
+After training models using data with negative values replaced with 0, got a score of 848.66093
 Citation:
 Alexander Guschin, Dmitry Ulyanov, inversion, Mikhail Trofimov, utility, and Μαριος Μιχαηλιδης KazAnova. Predict Future Sales. https://kaggle.com/competitions/competitive-data-science-predict-future-sales, 2018. Kaggle.
