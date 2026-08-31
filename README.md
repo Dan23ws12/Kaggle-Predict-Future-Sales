@@ -11,7 +11,7 @@ The dataset consists of:
 - Item category data
 - Item price data
 - Test data (predicted sales for each shop of the company for each product for the next month)
-The evaluation metric is the RMSLE (Root Mean Squared Log Error).
+The evaluation metric is the RMSE (Root Mean Squared Error).
 
 The competition has ended but this project is just for me to enhance my data analysis and predictive modeling skills.
 
@@ -24,13 +24,19 @@ I will use the following tools:
 - LightGBM
 - CatBoost
 - Matplotlib
-- Seaborn
 
 I will start by exploring the data and understanding the problem statement.
 
 Then, I will preprocess the data and create features that will help in predicting the sales.
 
-Finally, I will train different models and evaluate their performance using the RMSLE metric.
+Finally, I will train different models and evaluate their performance using the RMSE metric.
+
+You can copy the .env.example file and fill in the values to run the project
+The files needed to run the project are in requirements.txt, you can download that onto your
+sytem or into a python virtual environment 
+
+Some ideas for features such as length of item name were obtained from the Kaggle discussion 
+linked here: https://www.kaggle.com/code/abubakar624/first-place-solution-kaggle-predict-future-sales#Feature-engineering
 
 Citation:
 Alexander Guschin, Dmitry Ulyanov, inversion, Mikhail Trofimov, utility, and Μαριος Μιχαηλιδης KazAnova. Predict Future Sales. https://kaggle.com/competitions/competitive-data-science-predict-future-sales, 2018. Kaggle.
