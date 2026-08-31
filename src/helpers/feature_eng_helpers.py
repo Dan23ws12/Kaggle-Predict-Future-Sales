@@ -79,6 +79,7 @@ def add_features_to_sub_df(
         how="left",
     )
     sub_df["item_cnt_month"] = sub_df["item_cnt_month"].fillna(0)
+    sub_df["item_price_median"] = sub_df["item_price_median"].fillna(0)
     return sub_df
 
 def _model_feature_names(model, n_features: int) -> list[str]:
