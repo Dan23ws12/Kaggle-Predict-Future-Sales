@@ -5,3 +5,5 @@ pvenv/
 .ipynb_checkpoints/
 data/clean data/
 data/full data/
+data/submission data/31_xgb_submission.csv
+data/submission data/2026-08-31_xgb_mean_submission.csv
