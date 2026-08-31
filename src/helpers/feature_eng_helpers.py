@@ -40,36 +40,29 @@ def get_preprocessed_data(data: pd.DataFrame) -> pd.DataFrame:
     return new_data
 
 def add_features_to_sub_df(
-    sub_df: pd.DataFrame, processed_train: pd.DataFrame
+    sub_df: pd.DataFrame, train_df: pd.DataFrame
 ) -> pd.DataFrame:
     """
-    Prepares a submission-style frame (same columns as train_sub) using
-    processed_train: rare shop_id/item_id values become "other", then
-    item_cnt_month and item_price_median are taken from the prior month
-    in processed_train. Unmatched aggregated values are filled with 0.
+    Adds item_cnt_month and item_price_median to sub_df from train_df rows
+    in month 33 with the same shop_id and item_id. Shop/item IDs are not
+    replaced. If the shop or item has no month-33 row in train_df, both
+    values are 0.
     """
     sub_df = sub_df.copy()
-    for col in ["shop_id", "item_id"]:
-        sub_df[col] = sub_df[col].astype(str)
-        sub_df = data_preprocessor.replace_vals_by_col(
-            sub_df, col, processed_train[col]
-        )
-
-    prior_month_num = int(sub_df["month_block_num"].max()) - 1
-    prior_month_sales = processed_train.loc[
-        processed_train["month_block_num"] == prior_month_num,
-        ["shop_id", "item_id", "item_cnt_month", "item_price_median"],
-    ].copy()
-    for col in ("shop_id", "item_id"):
-        prior_month_sales[col] = prior_month_sales[col].astype(str)
-        sub_df[col] = sub_df[col].astype(str)
+    last_month_sales = (
+        train_df.loc[
+            train_df["month_block_num"] == 33,
+            ["shop_id", "item_id", "item_cnt_month", "item_price_median"],
+        ]
+        .drop_duplicates(subset=["shop_id", "item_id"], keep="first")
+    )
 
     overlap = [c for c in ("item_cnt_month", "item_price_median") if c in sub_df.columns]
     if overlap:
         sub_df = sub_df.drop(columns=overlap)
 
     sub_df = sub_df.merge(
-        prior_month_sales,
+        last_month_sales,
         on=["shop_id", "item_id"],
         how="left",
     )
