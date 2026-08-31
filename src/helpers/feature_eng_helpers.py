@@ -30,19 +30,14 @@ def get_preprocessed_data(data: pd.DataFrame) -> pd.DataFrame:
     Returns the preprocessed data.
     """
     new_data = data_preprocessor.replace_infrequent_values(data)
-    new_data = data_preprocessor.add_features(new_data)
     keys = ["item_id", "shop_id", "month_block_num"]
     data_grouped = new_data.groupby(keys, as_index=False).agg({
-        "item_name_length": "first",
-        "num_months_sold_prior": "first",
-        "avg_sales_per_shop": "first",
-        "avg_sales_per_item": "first",
-        "avg_item_price_per_month": "first",
-        "avg_shop_price_per_month": "first",
         "item_price_median": "median",
         TARGET_COL: "sum",
     })
-    return data_grouped
+    new_data = data_preprocessor.add_features(data_grouped)
+    
+    return new_data
 
 def add_features_to_sub_df(
     sub_df: pd.DataFrame, processed_train: pd.DataFrame
@@ -51,7 +46,7 @@ def add_features_to_sub_df(
     Prepares a submission-style frame (same columns as train_sub) using
     processed_train: rare shop_id/item_id values become "other", then
     item_cnt_month and item_price_median are taken from the prior month
-    in processed_train. Unmatched item_cnt_month values are filled with 0.
+    in processed_train. Unmatched aggregated values are filled with 0.
     """
     sub_df = sub_df.copy()
     for col in ["shop_id", "item_id"]:
@@ -81,6 +76,7 @@ def add_features_to_sub_df(
     sub_df["item_cnt_month"] = sub_df["item_cnt_month"].fillna(0)
     sub_df["item_price_median"] = sub_df["item_price_median"].fillna(0)
     return sub_df
+
 
 def _model_feature_names(model, n_features: int) -> list[str]:
     """Return feature names stored on a fitted model, or generic fallback names."""
